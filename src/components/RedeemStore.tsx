@@ -10,6 +10,12 @@ import { Tables } from '@/integrations/supabase/types';
 
 type KarmaStoreItem = Tables<'karma_store'>;
 
+interface RedeemResponse {
+  success: boolean;
+  message: string;
+  redemption_id?: string;
+}
+
 const RedeemStore = () => {
   const [redeemItems, setRedeemItems] = useState<KarmaStoreItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,20 +59,15 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      const { data, error } = await supabase.rpc(
-        'redeem_karma_item',
-        {
-          _item_id: itemId,
-          _user_id: user.id
-        }
-      );
+      const { data, error } = await supabase.rpc('redeem_karma_item', {
+        _item_id: itemId,
+        _user_id: user.id
+      }) as { data: RedeemResponse | null, error: any };
 
       if (error) throw error;
       
-      if (data && typeof data === 'object' && 'success' in data) {
-        const responseData = data as { success: boolean; message: string; redemption_id?: string };
-        
-        if (responseData.success) {
+      if (data) {
+        if (data.success) {
           toast({
             title: "Redemption successful",
             description: "Your reward has been redeemed successfully!",
@@ -83,7 +84,7 @@ const RedeemStore = () => {
         } else {
           toast({
             title: "Redemption failed",
-            description: responseData.message || "There was an error processing your redemption",
+            description: data.message || "There was an error processing your redemption",
             variant: "destructive"
           });
         }

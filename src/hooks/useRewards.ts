@@ -14,6 +14,13 @@ type Redemption = Tables<'redemptions'> & {
   };
 };
 
+// Define a simple response type for our RPC function
+interface RedeemResponse {
+  success: boolean;
+  message: string;
+  redemption_id?: string;
+}
+
 export function useRewards(userId?: string) {
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -61,21 +68,16 @@ export function useRewards(userId?: string) {
     }
     
     try {
-      const { data, error } = await supabase.rpc(
-        'redeem_karma_item', 
-        {
-          _item_id: reward.id,
-          _user_id: userId
-        }
-      );
+      // Use type assertion to bypass TypeScript checking for the RPC call
+      const { data, error } = await supabase.rpc('redeem_karma_item', {
+        _item_id: reward.id,
+        _user_id: userId
+      }) as { data: RedeemResponse | null, error: any };
       
       if (error) throw error;
       
-      // Since we don't have strict typing, use a type guard
-      if (data && typeof data === 'object' && 'success' in data) {
-        const responseData = data as { success: boolean; message: string; redemption_id?: string };
-        
-        if (responseData.success) {
+      if (data) {
+        if (data.success) {
           toast({
             title: `Reward Claimed: ${reward.title}`,
             description: `You have used ${reward.points} karma points. We'll send you details via email.`,
@@ -87,7 +89,7 @@ export function useRewards(userId?: string) {
         } else {
           toast({
             title: "Claim failed",
-            description: responseData.message || "You don't have enough karma points",
+            description: data.message || "You don't have enough karma points",
             variant: "destructive"
           });
         }
