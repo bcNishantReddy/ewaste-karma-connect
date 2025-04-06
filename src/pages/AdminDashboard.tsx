@@ -35,7 +35,7 @@ type Redemption = Database['public']['Tables']['redemptions']['Row'];
 
 interface UserTypeCount {
   user_type: string;
-  count: string;
+  count: number;
 }
 
 interface Stats {
@@ -86,22 +86,25 @@ const AdminDashboard = () => {
     try {
       const { data: userCounts, error: userError } = await supabase
         .from('profiles')
-        .select('user_type, count(*)')
-        .group('user_type');
-
+        .select('user_type, count')
+        .select('user_type');
+      
       if (userError) throw userError;
-
-      let userCount = 0;
-      let kabadiwallasCount = 0;
-      let recyclersCount = 0;
-
+      
+      const groupedData: Record<string, number> = {};
       if (userCounts) {
-        userCounts.forEach((group: any) => {
-          if (group.user_type === 'user') userCount = parseInt(group.count);
-          if (group.user_type === 'kabadiwalla') kabadiwallasCount = parseInt(group.count);
-          if (group.user_type === 'recycler') recyclersCount = parseInt(group.count);
+        userCounts.forEach(user => {
+          const type = user.user_type;
+          if (!groupedData[type]) {
+            groupedData[type] = 0;
+          }
+          groupedData[type]++;
         });
       }
+
+      const userCount = groupedData['user'] || 0;
+      const kabadiwallasCount = groupedData['kabadiwalla'] || 0;
+      const recyclersCount = groupedData['recycler'] || 0;
 
       const { count: totalPickups, error: pickupsError } = await supabase
         .from('pickups')
@@ -122,8 +125,13 @@ const AdminDashboard = () => {
 
       if (redemptionError) throw redemptionError;
 
-      const totalIssued = karmaIssued ? karmaIssued.reduce((sum, item) => sum + (item.points || 0), 0) : 0;
-      const totalRedeemed = karmaRedeemed ? karmaRedeemed.reduce((sum, item) => sum + (item.points_used || 0), 0) : 0;
+      const totalIssued = karmaIssued 
+        ? karmaIssued.reduce((sum, item) => sum + (item.points || 0), 0) 
+        : 0;
+        
+      const totalRedeemed = karmaRedeemed 
+        ? karmaRedeemed.reduce((sum, item) => sum + (item.points_used || 0), 0) 
+        : 0;
 
       setStats({
         users: userCount,
@@ -191,31 +199,40 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      const pickupsWithNames: PickupWithUsers[] = await Promise.all(
-        (data || []).map(async (pickup) => {
-          const { data: userData } = await supabase
+      const pickupsWithNames: PickupWithUsers[] = [];
+      
+      for (const pickup of (data || [])) {
+        let user_name = 'Unknown';
+        let kabadiwala_name = 'Unassigned';
+        
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', pickup.user_id)
+          .single();
+          
+        if (userData) {
+          user_name = userData.name;
+        }
+        
+        if (pickup.kabadiwala_id) {
+          const { data: kabadiwalaData } = await supabase
             .from('profiles')
             .select('name')
-            .eq('id', pickup.user_id)
+            .eq('id', pickup.kabadiwala_id)
             .single();
-          
-          let kabadiwalaData = null;
-          if (pickup.kabadiwala_id) {
-            const { data: kData } = await supabase
-              .from('profiles')
-              .select('name')
-              .eq('id', pickup.kabadiwala_id)
-              .single();
-            kabadiwalaData = kData;
+            
+          if (kabadiwalaData) {
+            kabadiwala_name = kabadiwalaData.name;
           }
-          
-          return {
-            ...pickup,
-            user_name: userData?.name || 'Unknown',
-            kabadiwala_name: kabadiwalaData?.name || 'Unassigned'
-          };
-        })
-      );
+        }
+        
+        pickupsWithNames.push({
+          ...pickup,
+          user_name,
+          kabadiwala_name
+        });
+      }
 
       setPickups(pickupsWithNames);
     } catch (error: any) {
