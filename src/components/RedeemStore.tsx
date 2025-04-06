@@ -6,12 +6,18 @@ import { ShoppingBag, Gift, Award, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { Tables } from '@/integrations/supabase/types';
+
+type KarmaStoreItem = Tables<'karma_store'>;
 
 const RedeemStore = () => {
-  const [redeemItems, setRedeemItems] = useState<any[]>([]);
+  const [redeemItems, setRedeemItems] = useState<KarmaStoreItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [redeeming, setRedeeming] = useState<string | null>(null);
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchKarmaItems = async () => {
@@ -34,6 +40,60 @@ const RedeemStore = () => {
 
     fetchKarmaItems();
   }, []);
+
+  const handleRedeem = async (itemId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to redeem rewards",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setRedeeming(itemId);
+      
+      const { data, error } = await supabase.rpc('redeem_karma_item', {
+        _item_id: itemId,
+        _user_id: user.id
+      });
+
+      if (error) throw error;
+      
+      if (data && data.success) {
+        toast({
+          title: "Redemption successful",
+          description: "Your reward has been redeemed successfully!",
+        });
+        
+        // Refresh the item list
+        const { data: refreshedItems } = await supabase
+          .from('karma_store')
+          .select('*')
+          .order('points', { ascending: true });
+          
+        if (refreshedItems) {
+          setRedeemItems(refreshedItems);
+        }
+      } else {
+        toast({
+          title: "Redemption failed",
+          description: data?.message || "There was an error processing your redemption",
+          variant: "destructive"
+        });
+      }
+    } catch (err: any) {
+      console.error('Error redeeming item:', err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to redeem item",
+        variant: "destructive"
+      });
+    } finally {
+      setRedeeming(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -89,6 +149,12 @@ const RedeemStore = () => {
           <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500">
             Turn your environmental contributions into sustainable products
           </p>
+          {profile && (
+            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-800">
+              <Award className="h-4 w-4 mr-1" />
+              <span>Your Karma Balance: {profile.karma_points || 0} points</span>
+            </div>
+          )}
         </div>
 
         <div className="mt-12">
@@ -122,16 +188,43 @@ const RedeemStore = () => {
                   )}
                 </CardContent>
                 <CardFooter>
-                  <Link to={user ? "/dashboard" : "/login"} className="w-full">
+                  {user ? (
                     <Button 
                       variant="outline" 
                       className="w-full"
-                      disabled={item.stock === 0}
+                      disabled={
+                        item.stock === 0 || 
+                        redeeming === item.id || 
+                        (profile?.karma_points || 0) < item.points
+                      }
+                      onClick={() => handleRedeem(item.id)}
                     >
-                      <ShoppingBag className="h-4 w-4 mr-2" />
-                      Redeem Now
+                      {redeeming === item.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Redeeming...
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="h-4 w-4 mr-2" />
+                          {(profile?.karma_points || 0) < item.points 
+                            ? `Need ${item.points - (profile?.karma_points || 0)} more points` 
+                            : 'Redeem Now'
+                          }
+                        </>
+                      )}
                     </Button>
-                  </Link>
+                  ) : (
+                    <Link to="/login" className="w-full">
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                      >
+                        <ShoppingBag className="h-4 w-4 mr-2" />
+                        Login to Redeem
+                      </Button>
+                    </Link>
+                  )}
                 </CardFooter>
               </Card>
             ))}
