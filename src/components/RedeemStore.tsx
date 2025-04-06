@@ -11,7 +11,6 @@ import { Tables } from '@/integrations/supabase/types';
 
 type KarmaStoreItem = Tables<'karma_store'>;
 
-// Define interface for the response from redeem_karma_item function
 interface RedeemResponse {
   success: boolean;
   message: string;
@@ -61,7 +60,6 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      // Fixed: Using the proper typing for the RPC call
       const { data, error } = await supabase.rpc('redeem_karma_item', {
         _item_id: itemId,
         _user_id: user.id
