@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Recycle, User, Bell, Settings, LogOut, ChevronDown, MapPin } from "lucide-react";
 import UserDashboard from "@/components/dashboard/UserDashboard";
@@ -29,13 +28,6 @@ const Dashboard = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const handleUserTypeChange = (type: string) => {
-    toast({
-      title: "View changed",
-      description: `You are now viewing the ${type} dashboard.`,
-    });
-  };
-
   const handleLogout = async (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -60,20 +52,6 @@ const Dashboard = () => {
     }
   };
 
-  // Stable dashboard render function with proper keys
-  const renderDashboard = useMemo(() => {
-    switch (userType) {
-      case "user":
-        return <UserDashboard key={`user-dashboard-${userType}`} />;
-      case "kabadiwalla":
-        return <KabadiwallaDashboard key={`kabadiwalla-dashboard-${userType}`} />;
-      case "recycler":
-        return <RecyclerDashboard key={`recycler-dashboard-${userType}`} />;
-      default:
-        return <UserDashboard key={`default-dashboard-${userType}`} />;
-    }
-  }, [userType]);
-
   function getInitials(name: string) {
     return name
       ?.split(' ')
@@ -96,6 +74,21 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  // Determine which dashboard to render based on user type
+  const getDashboardComponent = () => {
+    console.log("Getting dashboard component for user type:", userType);
+    switch (userType) {
+      case "user":
+        return <UserDashboard key={`user-dashboard-${profile.id}`} />;
+      case "kabadiwalla":
+        return <KabadiwallaDashboard key={`kabadiwalla-dashboard-${profile.id}`} />;
+      case "recycler":
+        return <RecyclerDashboard key={`recycler-dashboard-${profile.id}`} />;
+      default:
+        return <UserDashboard key={`default-dashboard-${profile.id}`} />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -233,7 +226,7 @@ const Dashboard = () => {
           
           {activeTab === 'dashboard' ? (
             <div key={`dashboard-content-${userType}`}>
-              {renderDashboard}
+              {getDashboardComponent()}
             </div>
           ) : (
             <div key="profile-content">
