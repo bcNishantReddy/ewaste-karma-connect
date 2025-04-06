@@ -16,6 +16,7 @@ import { Tables } from "@/integrations/supabase/types";
 
 type PickupHistory = Tables<'pickups'>;
 type RewardItem = Tables<'karma_store'>;
+
 type Redemption = Tables<'redemptions'> & {
   item?: {
     title?: string;
@@ -190,10 +191,13 @@ const UserDashboard = () => {
     }
     
     try {
-      const { data, error } = await supabase.rpc<RedeemResponse>('redeem_karma_item', {
-        _item_id: reward.id,
-        _user_id: user.id
-      });
+      const { data, error } = await supabase.rpc<RedeemResponse, {_item_id: string, _user_id: string}>(
+        'redeem_karma_item',
+        {
+          _item_id: reward.id,
+          _user_id: user.id
+        }
+      );
       
       if (error) throw error;
       

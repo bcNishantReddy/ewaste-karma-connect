@@ -61,13 +61,18 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      const { data, error } = await supabase.rpc<RedeemResponse>('redeem_karma_item', {
-        _item_id: itemId,
-        _user_id: user.id
-      });
+      // Fix type arguments for the RPC call
+      const { data, error } = await supabase.rpc<RedeemResponse, {_item_id: string, _user_id: string}>(
+        'redeem_karma_item',
+        {
+          _item_id: itemId,
+          _user_id: user.id
+        }
+      );
 
       if (error) throw error;
       
+      // Handle success case with proper null/undefined checks
       if (data && data.success) {
         toast({
           title: "Redemption successful",
