@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +21,13 @@ const Dashboard = () => {
   
   // Set the userType based on profile from Supabase
   const userType = profile?.user_type || 'user';
+
+  // Handle component unmounting safely
+  useEffect(() => {
+    return () => {
+      // Clean-up function for when component unmounts
+    };
+  }, []);
 
   const handleUserTypeChange = (type: string) => {
     toast({
@@ -44,13 +51,13 @@ const Dashboard = () => {
   const renderDashboard = () => {
     switch (userType) {
       case "user":
-        return <UserDashboard key="user-dashboard" />;
+        return <UserDashboard key={`user-dashboard-${activeTab}`} />;
       case "kabadiwalla":
-        return <KabadiwallaDashboard key="kabadiwalla-dashboard" />;
+        return <KabadiwallaDashboard key={`kabadiwalla-dashboard-${activeTab}`} />;
       case "recycler":
-        return <RecyclerDashboard key="recycler-dashboard" />;
+        return <RecyclerDashboard key={`recycler-dashboard-${activeTab}`} />;
       default:
-        return <UserDashboard key="default-dashboard" />;
+        return <UserDashboard key={`default-dashboard-${activeTab}`} />;
     }
   };
 
@@ -64,6 +71,18 @@ const Dashboard = () => {
   }
 
   const isAdmin = profile?.user_type === 'admin';
+
+  // Only render content when profile is available
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="p-8 rounded-lg bg-white shadow-md">
+          <div className="animate-spin w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-center text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -197,7 +216,9 @@ const Dashboard = () => {
             </div>
           </div>
           
-          {activeTab === 'dashboard' ? renderDashboard() : <ProfileSettings key="profile-settings" />}
+          <div key={`content-${activeTab}`}>
+            {activeTab === 'dashboard' ? renderDashboard() : <ProfileSettings key={`profile-${profile.id}`} />}
+          </div>
         </div>
       </main>
 
