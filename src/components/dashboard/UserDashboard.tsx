@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,20 @@ import { Tables } from "@/integrations/supabase/types";
 
 type PickupHistory = Tables<'pickups'>;
 type RewardItem = Tables<'karma_store'>;
-type Redemption = Tables<'redemptions'>;
+type Redemption = Tables<'redemptions'> & {
+  item?: {
+    title?: string;
+    points?: number;
+    image_url?: string;
+    description?: string;
+  };
+};
+
+interface RedeemResponse {
+  success: boolean;
+  message: string;
+  redemption_id?: string;
+}
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -34,7 +46,6 @@ const UserDashboard = () => {
   const { user, profile } = useAuth();
   const [userLocation, setUserLocation] = useState(() => localStorage.getItem('userLocation') || 'New Delhi, India');
 
-  // Calculate levels based on karma points
   const karmaPoints = profile?.karma_points || 0;
   const level = Math.floor(karmaPoints / 250) + 1;
   const nextLevel = level * 250;
@@ -56,7 +67,7 @@ const UserDashboard = () => {
         .from('pickups')
         .select('*')
         .eq('user_id', user.id)
-        .order('date', { ascending: false });
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       setPickupHistory(data || []);
@@ -127,7 +138,6 @@ const UserDashboard = () => {
     try {
       setSubmitting(true);
       
-      // Save location to localStorage for future use
       localStorage.setItem('userLocation', userLocation);
       
       const { data, error } = await supabase
@@ -139,7 +149,7 @@ const UserDashboard = () => {
           pickup_date: pickupDate || null,
           pickup_time: pickupTime || null,
           status: 'pending',
-          points: Math.floor(Math.random() * 100) + 50, // Temporary random points
+          points: Math.floor(Math.random() * 100) + 50,
         }])
         .select();
       
@@ -155,7 +165,6 @@ const UserDashboard = () => {
       setPickupDate('');
       setPickupTime('');
       
-      // Refresh pickup history
       fetchPickupHistory();
       
     } catch (err: any) {
@@ -181,26 +190,25 @@ const UserDashboard = () => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
+      const { data, error } = await supabase.rpc<RedeemResponse>('redeem_karma_item', {
         _item_id: reward.id,
         _user_id: user.id
       });
       
       if (error) throw error;
       
-      if (data.success) {
+      if (data && data.success) {
         toast({
           title: `Reward Claimed: ${reward.title}`,
           description: `You have used ${reward.points} karma points. We'll send you details via email.`,
         });
         
-        // Refresh data
         fetchRewards();
         fetchRedemptions();
       } else {
         toast({
           title: "Claim failed",
-          description: data.message || "You don't have enough karma points",
+          description: data?.message || "You don't have enough karma points",
           variant: "destructive"
         });
       }
@@ -287,7 +295,6 @@ const UserDashboard = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Map component */}
             <MapComponent 
               userType="user"
               title="Nearby Kabadiwallas"
@@ -445,7 +452,7 @@ const UserDashboard = () => {
                         </div>
                         <div className="flex items-center text-xs text-gray-500">
                           <Calendar className="mr-1 h-3 w-3" />
-                          <span className="mr-2">{new Date(pickup.date || pickup.created_at).toLocaleDateString()}</span>
+                          <span className="mr-2">{new Date(pickup.pickup_date || pickup.created_at).toLocaleDateString()}</span>
                           <Clock className="mr-1 h-3 w-3" />
                           <span>{pickup.pickup_time || new Date(pickup.created_at).toLocaleTimeString()}</span>
                         </div>
@@ -521,7 +528,7 @@ const UserDashboard = () => {
                         </div>
                         <div className="flex items-center text-xs text-gray-500">
                           <Calendar className="mr-1 h-3 w-3" />
-                          <span className="mr-2">{new Date(pickup.date || pickup.created_at).toLocaleDateString()}</span>
+                          <span className="mr-2">{new Date(pickup.pickup_date || pickup.created_at).toLocaleDateString()}</span>
                           <Clock className="mr-1 h-3 w-3" />
                           <span>{pickup.pickup_time || new Date(pickup.created_at).toLocaleTimeString()}</span>
                         </div>
@@ -539,7 +546,7 @@ const UserDashboard = () => {
                           </span>
                         </div>
                         <div className="text-xs text-gray-500">
-                          Collected by: {pickup.collector || 'Awaiting Assignment'}
+                          Collected by: {pickup.kabadiwala_id ? 'Assigned Collector' : 'Awaiting Assignment'}
                         </div>
                       </div>
                       <DropdownMenu>
@@ -646,34 +653,31 @@ const UserDashboard = () => {
                 <div className="mt-8">
                   <h3 className="text-lg font-medium mb-4">Your Redemption History</h3>
                   <div className="space-y-3">
-                    {redemptions.map((redemption) => {
-                      const item = redemption.item as any;
-                      return (
-                        <div key={redemption.id} className="flex items-center p-3 border rounded-lg">
-                          <div className="bg-purple-100 p-2 rounded-full mr-3">
-                            <ShoppingBag className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between">
-                              <p className="font-medium">{item?.title || 'Reward Item'}</p>
-                              <p className="text-sm text-amber-600">-{redemption.points_used} pts</p>
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              Redeemed on {new Date(redemption.created_at).toLocaleDateString()}
-                            </p>
-                            <p className="text-xs">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                redemption.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                                redemption.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {redemption.status?.charAt(0).toUpperCase() + redemption.status?.slice(1)}
-                              </span>
-                            </p>
-                          </div>
+                    {redemptions.map((redemption) => (
+                      <div key={redemption.id} className="flex items-center p-3 border rounded-lg">
+                        <div className="bg-purple-100 p-2 rounded-full mr-3">
+                          <ShoppingBag className="h-5 w-5 text-purple-600" />
                         </div>
-                      );
-                    })}
+                        <div className="flex-1">
+                          <div className="flex justify-between">
+                            <p className="font-medium">{redemption.item?.title || 'Reward Item'}</p>
+                            <p className="text-sm text-amber-600">-{redemption.points_used} pts</p>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Redeemed on {new Date(redemption.created_at).toLocaleDateString()}
+                          </p>
+                          <p className="text-xs">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              redemption.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                              redemption.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {redemption.status?.charAt(0).toUpperCase() + redemption.status?.slice(1)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

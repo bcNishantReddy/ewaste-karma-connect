@@ -11,6 +11,13 @@ import { Tables } from '@/integrations/supabase/types';
 
 type KarmaStoreItem = Tables<'karma_store'>;
 
+// Define interface for the response from redeem_karma_item function
+interface RedeemResponse {
+  success: boolean;
+  message: string;
+  redemption_id?: string;
+}
+
 const RedeemStore = () => {
   const [redeemItems, setRedeemItems] = useState<KarmaStoreItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +61,7 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
+      const { data, error } = await supabase.rpc<RedeemResponse>('redeem_karma_item', {
         _item_id: itemId,
         _user_id: user.id
       });
