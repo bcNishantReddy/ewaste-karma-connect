@@ -1,19 +1,60 @@
 
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Recycle, User, Bell, Settings, LogOut, ChevronDown } from "lucide-react";
+import { Recycle, User, Bell, Settings, LogOut, ChevronDown, MapPin } from "lucide-react";
 import UserDashboard from "@/components/dashboard/UserDashboard";
 import KabadiwallaDashboard from "@/components/dashboard/KabadiwallaDashboard";
 import RecyclerDashboard from "@/components/dashboard/RecyclerDashboard";
+import ProfileSettings from "@/components/dashboard/ProfileSettings";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/components/ui/use-toast";
 
 const Dashboard = () => {
-  // In a real application, this would come from authentication context
-  // For demo purposes, we'll use state and allow switching between dashboards
-  const [userType, setUserType] = useState("user"); // "user", "kabadiwalla", "recycler"
-  const [userName, setUserName] = useState("John Doe");
+  // Get user type from localStorage
+  const [userType, setUserType] = useState(() => localStorage.getItem('userType') || 'user');
+  const [userName, setUserName] = useState(() => localStorage.getItem('userName') || 'User');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if user is logged in (in a real app, this would check auth token)
+    const isLoggedIn = localStorage.getItem('userName');
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+    
+    // Update username if changed elsewhere
+    const storedUserName = localStorage.getItem('userName');
+    if (storedUserName && storedUserName !== userName) {
+      setUserName(storedUserName);
+    }
+  }, [navigate, userName]);
+
+  const handleUserTypeChange = (type: string) => {
+    setUserType(type);
+    localStorage.setItem('userType', type);
+    toast({
+      title: "View changed",
+      description: `You are now viewing the ${type} dashboard.`,
+    });
+  };
+
+  const handleLogout = () => {
+    // In a real app, you'd clear authentication tokens
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully.",
+    });
+    
+    // For demo purposes, we'll just redirect to login
+    setTimeout(() => {
+      navigate('/login');
+    }, 1000);
+  };
 
   const renderDashboard = () => {
     switch (userType) {
@@ -27,6 +68,15 @@ const Dashboard = () => {
         return <UserDashboard />;
     }
   };
+
+  function getInitials(name: string) {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -43,7 +93,7 @@ const Dashboard = () => {
             {/* For demo purposes - user type selector */}
             <Tabs
               value={userType}
-              onValueChange={setUserType}
+              onValueChange={handleUserTypeChange}
               className="hidden md:block"
             >
               <TabsList>
@@ -53,18 +103,22 @@ const Dashboard = () => {
               </TabsList>
             </Tabs>
             
-            <Button variant="ghost" size="icon" className="text-gray-500">
+            <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">3</span>
             </Button>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center">
                   <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-eco-green-100 flex items-center justify-center">
-                      <User className="h-4 w-4 text-eco-green-600" />
-                    </div>
-                    <span className="ml-2 mr-1 hidden md:block">{userName}</span>
+                    <Avatar className="h-8 w-8 mr-2">
+                      <AvatarImage src="" alt={userName} />
+                      <AvatarFallback className="bg-green-100 text-green-800">
+                        {getInitials(userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="mr-1 hidden md:block">{userName}</span>
                     <ChevronDown className="h-4 w-4" />
                   </div>
                 </Button>
@@ -75,28 +129,32 @@ const Dashboard = () => {
                 
                 {/* Mobile user type selector */}
                 <div className="md:hidden">
-                  <DropdownMenuItem onClick={() => setUserType("user")}>
+                  <DropdownMenuItem onClick={() => handleUserTypeChange("user")}>
                     Switch to User View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setUserType("kabadiwalla")}>
+                  <DropdownMenuItem onClick={() => handleUserTypeChange("kabadiwalla")}>
                     Switch to Kabadiwalla View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setUserType("recycler")}>
+                  <DropdownMenuItem onClick={() => handleUserTypeChange("recycler")}>
                     Switch to Recycler View
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </div>
                 
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('profile')}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('dashboard')}>
+                  <Recycle className="mr-2 h-4 w-4" />
+                  <span>Dashboard</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
@@ -110,19 +168,56 @@ const Dashboard = () => {
       <main className="flex-grow py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {userType === "user" && "User Dashboard"}
-              {userType === "kabadiwalla" && "Kabadiwalla Dashboard"}
-              {userType === "recycler" && "Recycler Dashboard"}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {userType === "user" && "Manage your e-waste collections and karma points"}
-              {userType === "kabadiwalla" && "Manage your e-waste collections and recycler connections"}
-              {userType === "recycler" && "Track your e-waste processing and kabadiwalla network"}
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {activeTab === 'dashboard' ? (
+                    <>
+                      {userType === "user" && "User Dashboard"}
+                      {userType === "kabadiwalla" && "Kabadiwalla Dashboard"}
+                      {userType === "recycler" && "Recycler Dashboard"}
+                    </>
+                  ) : (
+                    "Profile Settings"
+                  )}
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  {activeTab === 'dashboard' ? (
+                    <>
+                      {userType === "user" && "Manage your e-waste collections and karma points"}
+                      {userType === "kabadiwalla" && "Manage your e-waste collections and recycler connections"}
+                      {userType === "recycler" && "Track your e-waste processing and kabadiwalla network"}
+                    </>
+                  ) : (
+                    "Manage your account information and preferences"
+                  )}
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                {activeTab === 'dashboard' ? (
+                  <Button onClick={() => setActiveTab('profile')} variant="outline" className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">Profile</span>
+                  </Button>
+                ) : (
+                  <Button onClick={() => setActiveTab('dashboard')} variant="outline" className="flex items-center gap-1">
+                    <Recycle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Dashboard</span>
+                  </Button>
+                )}
+                
+                {userType === 'user' && activeTab === 'dashboard' && (
+                  <Button className="bg-green-600 hover:bg-green-700 flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    <span>Request Pickup</span>
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
           
-          {renderDashboard()}
+          {activeTab === 'dashboard' ? renderDashboard() : <ProfileSettings />}
         </div>
       </main>
 

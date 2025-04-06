@@ -23,6 +23,9 @@ import { useToast } from "@/components/ui/use-toast";
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  userType: z.enum(["user", "kabadiwalla", "recycler"], {
+    required_error: "Please select a user type",
+  }),
 });
 
 const registerSchema = z.object({
@@ -33,6 +36,7 @@ const registerSchema = z.object({
   userType: z.enum(["user", "kabadiwalla", "recycler"], {
     required_error: "Please select a user type",
   }),
+  location: z.string().min(3, { message: "Please enter your location" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -54,6 +58,7 @@ const AuthForm: React.FC = () => {
     defaultValues: {
       email: "",
       password: "",
+      userType: "user",
     },
   });
 
@@ -66,6 +71,7 @@ const AuthForm: React.FC = () => {
       password: "",
       confirmPassword: "",
       userType: "user",
+      location: "",
     },
   });
 
@@ -79,8 +85,11 @@ const AuthForm: React.FC = () => {
       description: "Welcome back to E-Waste Karma Connect!",
     });
 
-    // Redirect based on mocked user type
-    // In a real app, this would come from the authentication response
+    // Store user type in localStorage for persistent state
+    localStorage.setItem('userType', data.userType);
+    localStorage.setItem('userName', data.email.split('@')[0]);
+
+    // Redirect based on user type
     setTimeout(() => {
       navigate("/dashboard");
     }, 1000);
@@ -88,6 +97,11 @@ const AuthForm: React.FC = () => {
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     console.log("Register data:", data);
+    
+    // Store user location in localStorage
+    localStorage.setItem('userLocation', data.location);
+    localStorage.setItem('userType', data.userType);
+    localStorage.setItem('userName', data.name);
     
     // Simulate registration - would be replaced with actual API call
     toast({
@@ -102,7 +116,7 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
+    <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="login">Login</TabsTrigger>
         <TabsTrigger value="register">Register</TabsTrigger>
@@ -140,6 +154,48 @@ const AuthForm: React.FC = () => {
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={loginForm.control}
+                  name="userType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>I am a:</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="user" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              User (I have e-waste to recycle)
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="kabadiwalla" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Kabadiwalla (I collect waste)
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="recycler" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Recycler (I process e-waste)
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -195,6 +251,19 @@ const AuthForm: React.FC = () => {
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input placeholder="your@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={registerForm.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Street, City, PIN" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

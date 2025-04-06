@@ -2,585 +2,680 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/components/ui/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Recycle, User, MapPin, Calendar, Clock, MoreHorizontal, TruckIcon, ScaleIcon, ImagePlus, CheckCircle, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
-import { MapPin, Calendar, Clock, MapIcon, Camera, Banknote, ArrowRight, User, Recycle } from "lucide-react";
+import MapComponent from "./MapComponent";
 
 // Mock data
-const kabadiwallaStats = {
-  totalCollections: 45,
-  totalEarnings: "₹12,500",
-  kgCollected: 320,
+const kabadiwalaStats = {
+  totalCollections: 47,
+  pendingRequests: 3,
+  totalWeight: 238, // in kg
+  recyclerConnections: 5,
+  revenue: 18500, // in rupees
 };
 
-const nearbyCollections = [
+const pendingRequests = [
   {
     id: 1,
-    user: "Ananya Gupta",
-    distance: "1.2 km",
-    address: "123 Green Park, New Delhi",
-    items: "Old laptop, 2 smartphones",
-    date: "2023-04-10",
-    time: "14:00-17:00",
-    status: "pending",
+    date: "2025-04-07",
+    time: "2:30 PM",
+    items: "Old laptop, 2 mobile phones",
+    location: "Connaught Place, New Delhi",
+    customerName: "Rahul Sharma",
+    customerPhone: "+91 98765 43210",
+    distance: "2.5 km",
+    status: "Pending",
   },
   {
     id: 2,
-    user: "Rahul Sharma",
-    distance: "0.8 km",
-    address: "45 Lajpat Nagar, New Delhi",
-    items: "CRT monitor, printer",
-    date: "2023-04-11",
-    time: "10:00-13:00",
-    status: "pending",
+    date: "2025-04-08",
+    time: "10:00 AM",
+    items: "Refrigerator",
+    location: "Karol Bagh, New Delhi",
+    customerName: "Priya Gupta",
+    customerPhone: "+91 87654 32109",
+    distance: "3.8 km",
+    status: "Pending",
   },
   {
     id: 3,
-    user: "Priya Patel",
-    distance: "2.5 km",
-    address: "78 Vasant Kunj, New Delhi",
-    items: "Old refrigerator",
-    date: "2023-04-12",
-    time: "09:00-12:00",
-    status: "pending",
-  },
-];
-
-const scheduledCollections = [
-  {
-    id: 4,
-    user: "Vikram Singh",
-    distance: "1.5 km",
-    address: "22 Model Town, New Delhi",
-    items: "Television, DVD player",
-    date: "2023-04-08",
-    time: "13:00-15:00",
-    status: "scheduled",
-  },
-  {
-    id: 5,
-    user: "Neha Kapoor",
-    distance: "3.2 km",
-    address: "56 Rohini, New Delhi",
-    items: "Microwave, old cables",
-    date: "2023-04-09",
-    time: "16:00-18:00",
-    status: "scheduled",
+    date: "2025-04-08",
+    time: "4:15 PM",
+    items: "Microwave, toaster",
+    location: "Lajpat Nagar, New Delhi",
+    customerName: "Amit Kumar",
+    customerPhone: "+91 76543 21098",
+    distance: "5.2 km",
+    status: "Pending",
   },
 ];
 
 const completedCollections = [
   {
-    id: 6,
-    user: "Aditya Gupta",
-    distance: "1.8 km",
-    address: "34 Dwarka, New Delhi",
-    items: "Computer tower, keyboard",
-    date: "2023-04-01",
-    time: "10:00-12:00",
-    status: "completed",
-    earnings: "₹650",
+    id: 101,
+    date: "2025-04-01",
+    items: "Television, DVD player",
+    weight: 22,
+    customer: "Neha Singh",
+    location: "Dwarka, New Delhi",
+    payment: 1100,
+    status: "Completed",
+    recycler: "EcoTech Recyclers"
   },
   {
-    id: 7,
-    user: "Kavita Singh",
-    distance: "2.1 km",
-    address: "89 Saket, New Delhi",
-    items: "Old washing machine",
-    date: "2023-03-28",
-    time: "14:00-16:00",
-    status: "completed",
-    earnings: "₹1200",
+    id: 102,
+    date: "2025-03-28",
+    items: "Desktop computer, printer",
+    weight: 15,
+    customer: "Vikram Mehta",
+    location: "Rohini, New Delhi",
+    payment: 750,
+    status: "Completed",
+    recycler: "Green Earth Recycling"
+  },
+  {
+    id: 103,
+    date: "2025-03-25",
+    items: "Air conditioner",
+    weight: 30,
+    customer: "Anil Kapoor",
+    location: "Vasant Kunj, New Delhi",
+    payment: 1500,
+    status: "Completed",
+    recycler: "EcoTech Recyclers"
   },
 ];
 
-const recyclers = [
+const recyclerConnections = [
   {
     id: 1,
     name: "EcoTech Recyclers",
     location: "Industrial Area, Delhi",
-    distance: "5.6 km",
-    wasteTypes: ["Electronics", "Batteries", "Metals"],
-    rates: "High",
+    distance: "8.5 km",
+    acceptedItems: ["Computers", "Mobiles", "Televisions", "Large Appliances"],
+    rate: "High",
+    lastDelivery: "2025-03-29",
+    contact: "+91 98765 12345",
   },
   {
     id: 2,
-    name: "GreenCycle Industries",
-    location: "Manesar, Haryana",
-    distance: "12.3 km",
-    wasteTypes: ["Electronics", "Plastics"],
-    rates: "Medium",
+    name: "Green Earth Recycling",
+    location: "Noida, UP",
+    distance: "12 km",
+    acceptedItems: ["All Electronic Items", "Batteries"],
+    rate: "Medium",
+    lastDelivery: "2025-03-20",
+    contact: "+91 87654 23456",
   },
   {
     id: 3,
-    name: "Sustainable Futures",
-    location: "Noida, UP",
-    distance: "18.5 km",
-    wasteTypes: ["Electronics", "Metals", "Plastics"],
-    rates: "Very High",
+    name: "EcoFriendly Processors",
+    location: "Gurgaon, Haryana",
+    distance: "18 km",
+    acceptedItems: ["Small Appliances", "Computer Parts"],
+    rate: "High",
+    lastDelivery: "2025-03-15",
+    contact: "+91 76543 34567",
   },
 ];
 
 const KabadiwallaDashboard = () => {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [showCollectionForm, setShowCollectionForm] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const { toast } = useToast();
-  const [selectedCollection, setSelectedCollection] = useState<any>(null);
-  const [showUploadPhoto, setShowUploadPhoto] = useState(false);
-  const [showRecyclerDetails, setShowRecyclerDetails] = useState<any>(null);
 
-  const handleAcceptCollection = () => {
-    setSelectedCollection(null);
-    toast({
-      title: "Collection Accepted",
-      description: "You have accepted this collection request. It's now in your scheduled collections.",
-    });
-  };
-
-  const handleCompleteCollection = () => {
-    setShowUploadPhoto(true);
-  };
-
-  const handlePhotoUpload = () => {
-    setShowUploadPhoto(false);
-    setSelectedCollection(null);
+  const handleCollectionComplete = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowCollectionForm(false);
+    
     toast({
       title: "Collection Completed",
-      description: "Collection marked as complete and photo uploaded.",
+      description: "The collection has been marked as complete.",
     });
   };
 
-  const handleContactRecycler = (recycler: any) => {
-    setShowRecyclerDetails(null);
+  const handleAcceptRequest = (request: any) => {
     toast({
-      title: "Request Sent",
-      description: `Your request has been sent to ${recycler.name}.`,
+      title: "Pickup Accepted",
+      description: `You have accepted the pickup request from ${request.customerName}.`,
+    });
+  };
+
+  const handleRejectRequest = (request: any) => {
+    toast({
+      variant: "destructive",
+      title: "Pickup Rejected",
+      description: `You have rejected the pickup request from ${request.customerName}.`,
     });
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total Collections</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{kabadiwallaStats.totalCollections}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total Earnings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-eco-green-600">{kabadiwallaStats.totalEarnings}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">E-Waste Collected</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{kabadiwallaStats.kgCollected} kg</div>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="collections">Collections</TabsTrigger>
+          <TabsTrigger value="recyclers">Recyclers</TabsTrigger>
+        </TabsList>
 
-      {/* Collections Tabs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>E-Waste Collections</CardTitle>
-          <CardDescription>
-            View and manage your collection requests
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="nearby">
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="nearby">Nearby</TabsTrigger>
-              <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="nearby">
-              <div className="space-y-4">
-                {nearbyCollections.map((collection) => (
-                  <div 
-                    key={collection.id} 
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="font-medium">{collection.user}</span>
-                          <Badge className="bg-eco-blue-500">{collection.distance}</Badge>
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <TruckIcon className="h-5 w-5 mr-2 text-blue-600" />
+                  Collections
+                </CardTitle>
+                <CardDescription>Your e-waste collections</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-600">{kabadiwalaStats.totalCollections}</div>
+                <div className="flex justify-between mt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Total pickups completed
+                  </p>
+                  <Badge variant="outline" className="bg-orange-100 text-orange-800 hover:bg-orange-100">
+                    {kabadiwalaStats.pendingRequests} pending
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <ScaleIcon className="h-5 w-5 mr-2 text-green-600" />
+                  Total Weight
+                </CardTitle>
+                <CardDescription>E-waste collected</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">{kabadiwalaStats.totalWeight} kg</div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Total weight collected
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <Recycle className="h-5 w-5 mr-2 text-purple-600" />
+                  Recycler Connections
+                </CardTitle>
+                <CardDescription>Your network</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-600">{kabadiwalaStats.recyclerConnections}</div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Active recycler connections
+                </p>
+                <Button variant="link" className="p-0 h-auto mt-2 text-purple-600" onClick={() => setActiveTab("recyclers")}>
+                  View recyclers
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <MapComponent 
+              userType="kabadiwalla"
+              title="Nearby Pickup Requests"
+              description="View pending collection requests in your area"
+              pointsCount={6}
+              onlyShowRelevant={true}
+            />
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <TruckIcon className="mr-2 h-5 w-5 text-orange-600" />
+                  Pending Requests
+                </CardTitle>
+                <CardDescription>E-waste collections waiting for pickup</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingRequests.length > 0 ? (
+                  <div className="space-y-4">
+                    {pendingRequests.map((request) => (
+                      <div key={request.id} className="flex items-start p-3 rounded-lg border">
+                        <div className="bg-orange-100 rounded-full p-2 mr-3">
+                          <TruckIcon className="h-5 w-5 text-orange-600" />
                         </div>
-                        <h4 className="font-medium mt-1">{collection.items}</h4>
-                        <div className="mt-2 grid grid-cols-1 gap-1 text-sm">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.address}</span>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium">{request.items}</p>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {request.distance}
+                            </span>
                           </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.date}</span>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            <span className="mr-2">{request.date}</span>
+                            <Clock className="mr-1 h-3 w-3" />
+                            <span>{request.time}</span>
                           </div>
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.time}</span>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <MapPin className="mr-1 h-3 w-3" />
+                            <span className="mr-2">{request.location}</span>
                           </div>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <User className="mr-1 h-3 w-3" />
+                            <span>{request.customerName}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 hover:bg-green-700 h-8"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowCollectionForm(true);
+                            }}
+                          >
+                            Accept
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="h-8 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => handleRejectRequest(request)}
+                          >
+                            Decline
+                          </Button>
                         </div>
                       </div>
-                      <Button 
-                        onClick={() => setSelectedCollection(collection)}
-                        className="bg-eco-green-600 hover:bg-eco-green-700"
-                      >
-                        View Details
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-                {nearbyCollections.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No nearby collections available
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <div className="bg-gray-100 rounded-full p-3 mb-2">
+                      <CheckCircle className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900">No pending requests</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      All pickup requests have been processed
+                    </p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <ScaleIcon className="mr-2 h-5 w-5 text-green-600" />
+                    Recent Collections
+                  </CardTitle>
+                  <CardDescription>Recently completed pickups</CardDescription>
+                </div>
+                <div className="bg-green-100 px-3 py-1 rounded-full flex items-center">
+                  <span className="font-medium text-green-700">₹{kabadiwalaStats.revenue} earned</span>
+                </div>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="scheduled">
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
-                {scheduledCollections.map((collection) => (
-                  <div 
-                    key={collection.id} 
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="font-medium">{collection.user}</span>
-                          <Badge className="bg-eco-blue-500">{collection.distance}</Badge>
+                {completedCollections.slice(0, 3).map((collection) => (
+                  <div key={collection.id} className="flex items-start p-3 rounded-lg border">
+                    <div className="bg-green-100 rounded-full p-2 mr-3">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex justify-between">
+                        <p className="text-sm font-medium">{collection.items}</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          ₹{collection.payment}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Calendar className="mr-1 h-3 w-3" />
+                        <span className="mr-2">{collection.date}</span>
+                        <ScaleIcon className="mr-1 h-3 w-3" />
+                        <span>{collection.weight} kg</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <MapPin className="mr-1 h-3 w-3" />
+                        <span className="mr-2">{collection.location}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Recycle className="mr-1 h-3 w-3" />
+                        <span>Delivered to: {collection.recycler}</span>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Options</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem>Generate Report</DropdownMenuItem>
+                        <DropdownMenuItem>Contact Customer</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+              </div>
+              <Button variant="link" className="mt-4 p-0" onClick={() => setActiveTab("collections")}>
+                View all collections
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="collections" className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <TruckIcon className="mr-2 h-5 w-5 text-orange-600" />
+                  Pending Requests
+                </CardTitle>
+                <CardDescription>E-waste collections waiting for pickup</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingRequests.length > 0 ? (
+                  <div className="space-y-4">
+                    {pendingRequests.map((request) => (
+                      <div key={request.id} className="flex items-start p-3 rounded-lg border">
+                        <div className="bg-orange-100 rounded-full p-2 mr-3">
+                          <TruckIcon className="h-5 w-5 text-orange-600" />
                         </div>
-                        <h4 className="font-medium mt-1">{collection.items}</h4>
-                        <div className="mt-2 grid grid-cols-1 gap-1 text-sm">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.address}</span>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium">{request.items}</p>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {request.distance}
+                            </span>
                           </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.date}</span>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            <span className="mr-2">{request.date}</span>
+                            <Clock className="mr-1 h-3 w-3" />
+                            <span>{request.time}</span>
                           </div>
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.time}</span>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <MapPin className="mr-1 h-3 w-3" />
+                            <span className="mr-2">{request.location}</span>
                           </div>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <User className="mr-1 h-3 w-3" />
+                            <span>{request.customerName}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 hover:bg-green-700 h-8"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowCollectionForm(true);
+                            }}
+                          >
+                            Accept
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="h-8 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => handleRejectRequest(request)}
+                          >
+                            Decline
+                          </Button>
                         </div>
                       </div>
-                      <Button 
-                        onClick={() => {
-                          setSelectedCollection({...collection, scheduled: true});
-                        }}
-                        className="bg-eco-orange-500 hover:bg-eco-orange-600"
-                      >
-                        Complete
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-                {scheduledCollections.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No scheduled collections
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <div className="bg-gray-100 rounded-full p-3 mb-2">
+                      <CheckCircle className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900">No pending requests</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      All pickup requests have been processed
+                    </p>
                   </div>
                 )}
-              </div>
-            </TabsContent>
+              </CardContent>
+            </Card>
             
-            <TabsContent value="completed">
+            <MapComponent 
+              userType="kabadiwalla"
+              title="Pickup Locations"
+              description="Map of pickup requests"
+              pointsCount={6}
+              onlyShowRelevant={true}
+            />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
+                Completed Collections
+              </CardTitle>
+              <CardDescription>History of completed pickups</CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
                 {completedCollections.map((collection) => (
-                  <div 
-                    key={collection.id} 
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
+                  <div key={collection.id} className="flex items-start p-3 rounded-lg border">
+                    <div className="bg-green-100 rounded-full p-2 mr-3">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex justify-between">
+                        <p className="text-sm font-medium">{collection.items}</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          ₹{collection.payment}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Calendar className="mr-1 h-3 w-3" />
+                        <span className="mr-2">{collection.date}</span>
+                        <ScaleIcon className="mr-1 h-3 w-3" />
+                        <span>{collection.weight} kg</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <MapPin className="mr-1 h-3 w-3" />
+                        <span className="mr-2">{collection.location}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <User className="mr-1 h-3 w-3" />
+                        <span className="mr-2">{collection.customer}</span>
+                        <Recycle className="mr-1 h-3 w-3" />
+                        <span>{collection.recycler}</span>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Options</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem>Generate Report</DropdownMenuItem>
+                        <DropdownMenuItem>Contact Customer</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-center mt-6">
+                <Button variant="outline" className="mx-1" size="sm" disabled>
+                  Previous
+                </Button>
+                <Button variant="outline" className="mx-1" size="sm">
+                  Next
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="recyclers" className="space-y-6">
+          <MapComponent 
+            userType="kabadiwalla"
+            title="Nearby Recyclers"
+            description="Find e-waste recyclers in your area"
+            height="400px"
+            pointsCount={8}
+            onlyShowRelevant={true}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Recycle className="mr-2 h-5 w-5 text-purple-600" />
+                Connected Recyclers
+              </CardTitle>
+              <CardDescription>Recyclers in your network</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recyclerConnections.map((recycler) => (
+                  <div key={recycler.id} className="p-4 border rounded-lg">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="font-medium">{collection.user}</span>
-                          <Badge className="bg-green-500">Completed</Badge>
-                        </div>
-                        <h4 className="font-medium mt-1">{collection.items}</h4>
-                        <div className="mt-2 grid grid-cols-1 gap-1 text-sm">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.address}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-500 mr-1" />
-                            <span>{collection.date}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Banknote className="h-4 w-4 text-eco-green-500 mr-1" />
-                            <span className="text-eco-green-600 font-medium">{collection.earnings}</span>
-                          </div>
+                        <h3 className="font-medium text-lg">{recycler.name}</h3>
+                        <div className="flex items-center text-sm text-gray-500 mt-1">
+                          <MapPin className="mr-1 h-4 w-4" />
+                          <span>{recycler.location}</span>
+                          <span className="mx-2">•</span>
+                          <span>{recycler.distance}</span>
                         </div>
                       </div>
-                      <Button variant="outline">
-                        View Details
-                      </Button>
+                      <Badge className={recycler.rate === "High" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                        {recycler.rate} rates
+                      </Badge>
+                    </div>
+                    
+                    <div className="mt-3">
+                      <div className="text-sm font-medium mb-1">Accepts:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {recycler.acceptedItems.map((item, i) => (
+                          <Badge key={i} variant="outline" className="bg-blue-50">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-4">
+                      <div className="text-sm text-gray-500">
+                        Last delivery: {recycler.lastDelivery}
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm">
+                          Contact
+                        </Button>
+                        <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                          Schedule Delivery
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
-                {completedCollections.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No completed collections
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Collection Completion Dialog */}
+      <Dialog open={showCollectionForm} onOpenChange={setShowCollectionForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Complete Collection</DialogTitle>
+            <DialogDescription>
+              Enter details about the e-waste collected
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <form onSubmit={handleCollectionComplete} className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">Collection Details:</h3>
+                <div className="bg-gray-50 p-3 rounded-md space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Customer:</span>
+                    <span>{selectedRequest.customerName}</span>
                   </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Recyclers */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Recycle className="mr-2 h-5 w-5 text-eco-blue-500" />
-            Nearby Recyclers
-          </CardTitle>
-          <CardDescription>
-            Connect with recyclers to process your collected e-waste
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recyclers.map((recycler) => (
-              <div 
-                key={recycler.id} 
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{recycler.name}</h4>
-                    <div className="mt-2 grid grid-cols-1 gap-1 text-sm">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-                        <span>{recycler.location}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-gray-500 mr-2">Distance:</span>
-                        <span>{recycler.distance}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-gray-500 mr-2">Accepts:</span>
-                        <div className="flex flex-wrap gap-1">
-                          {recycler.wasteTypes.map((type, index) => (
-                            <Badge key={index} variant="outline" className="bg-gray-100">
-                              {type}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-gray-500 mr-2">Rates:</span>
-                        <Badge className={`${
-                          recycler.rates === "High" ? "bg-eco-green-500" : 
-                          recycler.rates === "Very High" ? "bg-eco-green-600" : "bg-eco-orange-500"
-                        }`}>
-                          {recycler.rates}
-                        </Badge>
-                      </div>
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Location:</span>
+                    <span>{selectedRequest.location}</span>
                   </div>
-                  <Button 
-                    onClick={() => setShowRecyclerDetails(recycler)}
-                    className="bg-eco-blue-600 hover:bg-eco-blue-700"
-                  >
-                    Connect
-                  </Button>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Items:</span>
+                    <span>{selectedRequest.items}</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline" className="w-full">
-            View All Recyclers
-          </Button>
-        </CardFooter>
-      </Card>
-
-      {/* Collection Details Dialog */}
-      {selectedCollection && (
-        <Dialog open={!!selectedCollection} onOpenChange={() => setSelectedCollection(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{selectedCollection.scheduled ? "Complete Collection" : "Collection Details"}</DialogTitle>
-              <DialogDescription>
-                Review the details and {selectedCollection.scheduled ? "complete the collection" : "accept if you're available"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
+              
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">User:</span>
-                  <span className="font-medium">{selectedCollection.user}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Items:</span>
-                  <span>{selectedCollection.items}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Date:</span>
-                  <span>{selectedCollection.date}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Time:</span>
-                  <span>{selectedCollection.time}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Address:</span>
-                  <span>{selectedCollection.address}</span>
-                </div>
-                <div className="pt-2">
-                  <Button className="w-full text-sm" variant="outline">
-                    <MapIcon className="h-4 w-4 mr-2" />
-                    View on Map
-                  </Button>
+                <label className="text-sm font-medium">Weight Collected (kg)</label>
+                <Input type="number" min="0.1" step="0.1" required />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Recycler</label>
+                <select className="w-full rounded-md border border-input bg-background px-3 h-10">
+                  {recyclerConnections.map(recycler => (
+                    <option key={recycler.id} value={recycler.id}>{recycler.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Notes</label>
+                <Textarea placeholder="Any additional notes about the collection" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Upload Photo Evidence</label>
+                <div className="border border-dashed border-gray-300 rounded-md p-4 text-center">
+                  <div className="flex flex-col items-center">
+                    <ImagePlus className="h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">Upload a photo of collected items</p>
+                    <input type="file" className="hidden" accept="image/*" />
+                    <Button type="button" variant="ghost" size="sm" className="mt-2">
+                      Browse
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter className="flex sm:justify-between">
-              <Button variant="outline" onClick={() => setSelectedCollection(null)}>
-                Cancel
-              </Button>
-              {selectedCollection.scheduled ? (
-                <Button onClick={handleCompleteCollection} className="bg-eco-orange-500 hover:bg-eco-orange-600">
-                  Mark as Completed
+              
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={() => setShowCollectionForm(false)}>
+                  Cancel
                 </Button>
-              ) : (
-                <Button onClick={handleAcceptCollection} className="bg-eco-green-600 hover:bg-eco-green-700">
-                  Accept Collection
+                <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                  Complete Collection
                 </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Upload Photo Dialog */}
-      {showUploadPhoto && (
-        <Dialog open={showUploadPhoto} onOpenChange={setShowUploadPhoto}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Upload Collection Photo</DialogTitle>
-              <DialogDescription>
-                Take a photo of the collected e-waste to verify completion
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <Camera className="h-8 w-8 mx-auto text-gray-400" />
-                <div className="mt-2">
-                  <Button className="relative bg-eco-blue-600 hover:bg-eco-blue-700">
-                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    Take Photo or Upload
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  JPEG, PNG, or GIF up to 10MB
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="notes" className="text-sm font-medium">
-                  Collection Notes (Optional)
-                </label>
-                <Textarea
-                  id="notes"
-                  placeholder="Add any notes about the collection"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowUploadPhoto(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handlePhotoUpload}
-                className="bg-eco-green-600 hover:bg-eco-green-700"
-              >
-                Complete Collection
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Recycler Details Dialog */}
-      {showRecyclerDetails && (
-        <Dialog open={!!showRecyclerDetails} onOpenChange={() => setShowRecyclerDetails(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Connect with Recycler</DialogTitle>
-              <DialogDescription>
-                Send a request to {showRecyclerDetails.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="waste-type" className="text-sm font-medium">
-                  E-Waste Type
-                </label>
-                <Input
-                  id="waste-type"
-                  placeholder="What type of e-waste do you have?"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="quantity" className="text-sm font-medium">
-                  Approximate Quantity (kg)
-                </label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  placeholder="Enter approximate weight"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="message" className="text-sm font-medium">
-                  Message
-                </label>
-                <Textarea
-                  id="message"
-                  placeholder="Tell the recycler about your e-waste collection"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowRecyclerDetails(null)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => handleContactRecycler(showRecyclerDetails)}
-                className="bg-eco-blue-600 hover:bg-eco-blue-700"
-              >
-                Send Request
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
