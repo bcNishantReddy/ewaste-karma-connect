@@ -35,7 +35,7 @@ type Redemption = Database['public']['Tables']['redemptions']['Row'];
 
 interface UserTypeCount {
   user_type: string;
-  count: number;
+  count: number | string;
 }
 
 interface Stats {
@@ -86,25 +86,22 @@ const AdminDashboard = () => {
     try {
       const { data: userCounts, error: userError } = await supabase
         .from('profiles')
-        .select('user_type, count')
-        .select('user_type');
+        .select('user_type, count(*)')
+        .group('user_type');
       
       if (userError) throw userError;
       
-      const groupedData: Record<string, number> = {};
+      let userCount = 0;
+      let kabadiwallasCount = 0;
+      let recyclersCount = 0;
+
       if (userCounts) {
-        userCounts.forEach(user => {
-          const type = user.user_type;
-          if (!groupedData[type]) {
-            groupedData[type] = 0;
-          }
-          groupedData[type]++;
+        userCounts.forEach((group: UserTypeCount) => {
+          if (group.user_type === 'user') userCount = parseInt(group.count.toString());
+          if (group.user_type === 'kabadiwalla') kabadiwallasCount = parseInt(group.count.toString());
+          if (group.user_type === 'recycler') recyclersCount = parseInt(group.count.toString());
         });
       }
-
-      const userCount = groupedData['user'] || 0;
-      const kabadiwallasCount = groupedData['kabadiwalla'] || 0;
-      const recyclersCount = groupedData['recycler'] || 0;
 
       const { count: totalPickups, error: pickupsError } = await supabase
         .from('pickups')
@@ -199,40 +196,40 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      const pickupsWithNames: PickupWithUsers[] = [];
-      
-      for (const pickup of (data || [])) {
-        let user_name = 'Unknown';
-        let kabadiwala_name = 'Unassigned';
-        
-        const { data: userData } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', pickup.user_id)
-          .single();
+      const pickupsWithNames: PickupWithUsers[] = await Promise.all(
+        (data || []).map(async (pickup) => {
+          let user_name = 'Unknown';
+          let kabadiwala_name = 'Unassigned';
           
-        if (userData) {
-          user_name = userData.name;
-        }
-        
-        if (pickup.kabadiwala_id) {
-          const { data: kabadiwalaData } = await supabase
+          const { data: userData } = await supabase
             .from('profiles')
             .select('name')
-            .eq('id', pickup.kabadiwala_id)
+            .eq('id', pickup.user_id)
             .single();
             
-          if (kabadiwalaData) {
-            kabadiwala_name = kabadiwalaData.name;
+          if (userData) {
+            user_name = userData.name;
           }
-        }
-        
-        pickupsWithNames.push({
-          ...pickup,
-          user_name,
-          kabadiwala_name
-        });
-      }
+          
+          if (pickup.kabadiwala_id) {
+            const { data: kabadiwalaData } = await supabase
+              .from('profiles')
+              .select('name')
+              .eq('id', pickup.kabadiwala_id)
+              .single();
+              
+            if (kabadiwalaData) {
+              kabadiwala_name = kabadiwalaData.name;
+            }
+          }
+          
+          return {
+            ...pickup,
+            user_name,
+            kabadiwala_name
+          };
+        })
+      );
 
       setPickups(pickupsWithNames);
     } catch (error: any) {
