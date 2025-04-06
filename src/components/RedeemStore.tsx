@@ -61,7 +61,7 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      // Fix: Properly type the RPC call for TypeScript
+      // Fixed: Using the proper typing for the RPC call
       const { data, error } = await supabase.rpc('redeem_karma_item', {
         _item_id: itemId,
         _user_id: user.id
@@ -69,7 +69,7 @@ const RedeemStore = () => {
 
       if (error) throw error;
       
-      // Fix: Type assertion to handle the response
+      // Type assertion for the response
       const responseData = data as RedeemResponse;
       
       if (responseData && responseData.success) {
