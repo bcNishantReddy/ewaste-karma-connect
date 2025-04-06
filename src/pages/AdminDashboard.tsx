@@ -57,6 +57,11 @@ interface NewKarmaItem {
   stock: number;
 }
 
+interface PickupWithUsers extends Pickup {
+  user_name?: string;
+  kabadiwala_name?: string;
+}
+
 const AdminDashboard = () => {
   const { user, profile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
@@ -66,7 +71,7 @@ const AdminDashboard = () => {
   const [karma, setKarma] = useState<KarmaStats>({ totalIssued: 0, totalRedeemed: 0 });
   const [storeItems, setStoreItems] = useState<KarmaStoreItem[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
-  const [pickups, setPickups] = useState<Pickup[]>([]);
+  const [pickups, setPickups] = useState<PickupWithUsers[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -81,8 +86,7 @@ const AdminDashboard = () => {
     try {
       const { data: userCounts, error: userError } = await supabase
         .from('profiles')
-        .select('user_type, count')
-        .select('user_type, count(*)', { count: 'exact' })
+        .select('user_type, count(*)')
         .group('user_type');
 
       if (userError) throw userError;
@@ -92,7 +96,7 @@ const AdminDashboard = () => {
       let recyclersCount = 0;
 
       if (userCounts) {
-        userCounts.forEach((group: UserTypeCount) => {
+        userCounts.forEach((group: any) => {
           if (group.user_type === 'user') userCount = parseInt(group.count);
           if (group.user_type === 'kabadiwalla') kabadiwallasCount = parseInt(group.count);
           if (group.user_type === 'recycler') recyclersCount = parseInt(group.count);
@@ -181,16 +185,39 @@ const AdminDashboard = () => {
     try {
       const { data, error } = await supabase
         .from('pickups')
-        .select(`
-          *,
-          user:user_id(name),
-          kabadiwala:kabadiwala_id(name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
-      setPickups(data || []);
+
+      const pickupsWithNames: PickupWithUsers[] = await Promise.all(
+        (data || []).map(async (pickup) => {
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', pickup.user_id)
+            .single();
+          
+          let kabadiwalaData = null;
+          if (pickup.kabadiwala_id) {
+            const { data: kData } = await supabase
+              .from('profiles')
+              .select('name')
+              .eq('id', pickup.kabadiwala_id)
+              .single();
+            kabadiwalaData = kData;
+          }
+          
+          return {
+            ...pickup,
+            user_name: userData?.name || 'Unknown',
+            kabadiwala_name: kabadiwalaData?.name || 'Unassigned'
+          };
+        })
+      );
+
+      setPickups(pickupsWithNames);
     } catch (error: any) {
       console.error('Error fetching pickups:', error);
     }
@@ -455,8 +482,8 @@ const AdminDashboard = () => {
                               <td className="px-4 py-2">
                                 {new Date(pickup.created_at).toLocaleDateString()}
                               </td>
-                              <td className="px-4 py-2">{(pickup.user as any)?.name || 'Unknown'}</td>
-                              <td className="px-4 py-2">{(pickup.kabadiwala as any)?.name || 'Unassigned'}</td>
+                              <td className="px-4 py-2">{pickup.user_name || 'Unknown'}</td>
+                              <td className="px-4 py-2">{pickup.kabadiwala_name || 'Unassigned'}</td>
                               <td className="px-4 py-2">{pickup.items}</td>
                               <td className="px-4 py-2">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${

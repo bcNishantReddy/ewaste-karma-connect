@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -121,7 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Sign up new user
   const signUp = async (email: string, password: string, name: string, userType: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({

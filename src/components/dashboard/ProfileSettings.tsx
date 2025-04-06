@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -77,7 +76,6 @@ const ProfileSettings = () => {
     },
   });
 
-  // Update form values when profile changes
   React.useEffect(() => {
     if (profile && user) {
       profileForm.reset({
