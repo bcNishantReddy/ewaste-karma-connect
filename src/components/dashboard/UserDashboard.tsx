@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
@@ -5,9 +6,7 @@ import MapComponent from "./MapComponent";
 import UserStats from "./UserStats";
 import PickupRequestForm from "./PickupRequestForm";
 import PickupHistoryComponent from "./PickupHistory";
-import RewardsMarketplace from "./RewardsMarketplace";
 import { usePickups } from "@/hooks/usePickups";
-import { useRewards } from "@/hooks/useRewards";
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -22,12 +21,6 @@ const UserDashboard = () => {
     submitting,
     submitPickupRequest
   } = usePickups(user?.id);
-
-  const {
-    rewards,
-    redemptions,
-    claimReward
-  } = useRewards(user?.id);
 
   const handleNewPickup = async (data: {
     items: string;
@@ -56,17 +49,15 @@ const UserDashboard = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="pickups">My Pickups</TabsTrigger>
-          <TabsTrigger value="rewards">Rewards</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <UserStats
             karmaPoints={karmaPoints}
             pickupHistory={pickupHistory}
-            redemptions={redemptions}
             onTabChange={setActiveTab}
           />
 
@@ -109,15 +100,6 @@ const UserDashboard = () => {
             description="Map of your collection history"
             height="300px"
             showRefreshButton={false}
-          />
-        </TabsContent>
-
-        <TabsContent value="rewards" className="space-y-6">
-          <RewardsMarketplace
-            rewards={rewards}
-            redemptions={redemptions}
-            karmaPoints={karmaPoints}
-            onClaimReward={claimReward}
           />
         </TabsContent>
       </Tabs>

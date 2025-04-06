@@ -3,23 +3,20 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Award, RecycleIcon, ShoppingBag } from 'lucide-react';
+import { Award, RecycleIcon } from 'lucide-react';
 import { Tables } from "@/integrations/supabase/types";
 
 type PickupHistory = Tables<'pickups'>;
-type Redemption = Tables<'redemptions'>;
 
 interface UserStatsProps {
   karmaPoints: number;
   pickupHistory: PickupHistory[];
-  redemptions: Redemption[];
   onTabChange: (tab: string) => void;
 }
 
 const UserStats: React.FC<UserStatsProps> = ({ 
   karmaPoints, 
   pickupHistory, 
-  redemptions, 
   onTabChange 
 }) => {
   const level = Math.floor(karmaPoints / 250) + 1;
@@ -27,7 +24,7 @@ const UserStats: React.FC<UserStatsProps> = ({
   const progress = (karmaPoints % 250) / 250 * 100;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center">
@@ -66,25 +63,6 @@ const UserStats: React.FC<UserStatsProps> = ({
           </p>
           <Button variant="link" className="p-0 h-auto mt-2 text-green-600" onClick={() => onTabChange("pickups")}>
             View history
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <ShoppingBag className="h-5 w-5 mr-2 text-purple-600" />
-            Rewards Claimed
-          </CardTitle>
-          <CardDescription>Items redeemed</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-purple-600">{redemptions.length}</div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Rewards claimed so far
-          </p>
-          <Button variant="link" className="p-0 h-auto mt-2 text-purple-600" onClick={() => onTabChange("rewards")}>
-            Browse rewards
           </Button>
         </CardContent>
       </Card>
