@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -192,18 +191,14 @@ const UserDashboard = () => {
     }
     
     try {
-      // Updated RPC call with correct typing
-      const { data, error } = await supabase.rpc<any>('redeem_karma_item', {
+      const { data, error } = await supabase.rpc<RedeemResponse, { _item_id: string; _user_id: string }>('redeem_karma_item', {
         _item_id: reward.id,
         _user_id: user.id
       });
       
       if (error) throw error;
       
-      // Type assertion for data since we know its structure
-      const responseData = data as RedeemResponse;
-      
-      if (responseData && responseData.success) {
+      if (data && data.success) {
         toast({
           title: `Reward Claimed: ${reward.title}`,
           description: `You have used ${reward.points} karma points. We'll send you details via email.`,
@@ -214,7 +209,7 @@ const UserDashboard = () => {
       } else {
         toast({
           title: "Claim failed",
-          description: responseData?.message || "You don't have enough karma points",
+          description: data?.message || "You don't have enough karma points",
           variant: "destructive"
         });
       }
