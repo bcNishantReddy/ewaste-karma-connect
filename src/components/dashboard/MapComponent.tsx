@@ -1,7 +1,6 @@
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Map, RefreshCw } from 'lucide-react';
+import { MapPin, Map, RefreshCw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -52,9 +51,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onlyShowRelevant = false,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const [points, setPoints] = useState<MapPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
   const determineRelevantTypes = () => {
     switch(userType) {
@@ -69,7 +70,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  const refreshPoints = () => {
+  const refreshPoints = useCallback(() => {
     setLoading(true);
     
     // Simulate API call delay
@@ -100,17 +101,38 @@ const MapComponent: React.FC<MapComponentProps> = ({
       
       setPoints(filteredPoints);
       setLoading(false);
+      setLastRefreshed(new Date());
       
       toast({
         title: "Map updated",
         description: "Nearby locations have been refreshed",
       });
     }, 1000);
-  };
+  }, [center, pointsCount, toast, userType, onlyShowRelevant]);
+
+  // Setup auto-refresh timer - every hour (3600000 ms)
+  useEffect(() => {
+    // Clear any existing timer when component re-renders
+    if (autoRefreshTimerRef.current) {
+      clearInterval(autoRefreshTimerRef.current);
+    }
+
+    // Set up a new timer
+    autoRefreshTimerRef.current = setInterval(() => {
+      console.log('Auto-refreshing map data (hourly)');
+      refreshPoints();
+    }, 3600000); // 1 hour in milliseconds
+
+    // Clean up the timer when component unmounts
+    return () => {
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
+      }
+    };
+  }, [refreshPoints]);
 
   useEffect(() => {
-    // Simulating loading a map library
-    // In a real application, you would load a map library like Google Maps or Mapbox
+    // Initial map load
     refreshPoints();
     
     const mapElement = mapRef.current;
@@ -133,7 +155,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return () => {
       // Cleanup map instance
     };
-  }, [center, pointsCount, userType, onlyShowRelevant]);
+  }, [center, pointsCount, userType, onlyShowRelevant, refreshPoints]);
+
+  // Format the last refreshed time
+  const formatLastRefreshed = () => {
+    const hours = lastRefreshed.getHours().toString().padStart(2, '0');
+    const minutes = lastRefreshed.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
 
   return (
     <Card className="w-full">
@@ -146,18 +175,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
             </CardTitle>
             <CardDescription>{description}</CardDescription>
           </div>
-          {showRefreshButton && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refreshPoints}
-              disabled={loading}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="text-xs text-gray-500 flex items-center">
+              <Clock className="h-3 w-3 mr-1" />
+              Last updated: {formatLastRefreshed()}
+            </div>
+            {showRefreshButton && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshPoints}
+                disabled={loading}
+                className="flex items-center gap-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
