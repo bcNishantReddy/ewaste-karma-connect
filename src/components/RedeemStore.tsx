@@ -17,6 +17,12 @@ interface RedeemResponse {
   redemption_id?: string;
 }
 
+// Interface for RPC input parameters
+interface RedeemKarmaItemParams {
+  _item_id: string;
+  _user_id: string;
+}
+
 const RedeemStore = () => {
   const [redeemItems, setRedeemItems] = useState<KarmaStoreItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,8 +66,8 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      // Properly type the RPC call with a generic type parameter
-      const { data, error } = await supabase.rpc<RedeemResponse>(
+      // Properly type the RPC call with both generic type parameters
+      const { data, error } = await supabase.rpc<RedeemResponse, RedeemKarmaItemParams>(
         'redeem_karma_item',
         {
           _item_id: itemId,
