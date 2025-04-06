@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,20 +14,20 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Set the userType based on profile from Supabase
-  const userType = profile?.user_type || 'user';
+  // Create a stable user type that doesn't change unexpectedly
+  const userType = useMemo(() => profile?.user_type || 'user', [profile?.user_type]);
 
-  // Handle component unmounting safely
+  // Handle navigation back to login after logout
   useEffect(() => {
-    return () => {
-      // Clean-up function for when component unmounts
-    };
-  }, []);
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleUserTypeChange = (type: string) => {
     toast({
@@ -36,30 +36,43 @@ const Dashboard = () => {
     });
   };
 
-  const handleLogout = async () => {
+  const handleLogout = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     try {
-      await signOut();
       toast({
-        title: "Logged out",
-        description: "You have been logged out successfully.",
+        title: "Logging out",
+        description: "Please wait while we log you out...",
       });
+      
+      await signOut();
+      
+      // We don't need to navigate here as the useEffect will handle it
     } catch (error) {
       console.error("Logout error:", error);
+      toast({
+        title: "Logout error",
+        description: "There was an error logging you out. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const renderDashboard = () => {
+  // Stable dashboard render function with proper keys
+  const renderDashboard = useMemo(() => {
     switch (userType) {
       case "user":
-        return <UserDashboard key={`user-dashboard-${activeTab}`} />;
+        return <UserDashboard key={`user-dashboard-${userType}`} />;
       case "kabadiwalla":
-        return <KabadiwallaDashboard key={`kabadiwalla-dashboard-${activeTab}`} />;
+        return <KabadiwallaDashboard key={`kabadiwalla-dashboard-${userType}`} />;
       case "recycler":
-        return <RecyclerDashboard key={`recycler-dashboard-${activeTab}`} />;
+        return <RecyclerDashboard key={`recycler-dashboard-${userType}`} />;
       default:
-        return <UserDashboard key={`default-dashboard-${activeTab}`} />;
+        return <UserDashboard key={`default-dashboard-${userType}`} />;
     }
-  };
+  }, [userType]);
 
   function getInitials(name: string) {
     return name
@@ -72,8 +85,8 @@ const Dashboard = () => {
 
   const isAdmin = profile?.user_type === 'admin';
 
-  // Only render content when profile is available
-  if (!profile) {
+  // Show loading state while auth is being determined or profile is loading
+  if (authLoading || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="p-8 rounded-lg bg-white shadow-md">
@@ -150,10 +163,12 @@ const Dashboard = () => {
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={(e) => {
-                  e.preventDefault();
-                  handleLogout();
-                }}>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    handleLogout();
+                  }}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
@@ -216,9 +231,15 @@ const Dashboard = () => {
             </div>
           </div>
           
-          <div key={`content-${activeTab}`}>
-            {activeTab === 'dashboard' ? renderDashboard() : <ProfileSettings key={`profile-${profile.id}`} />}
-          </div>
+          {activeTab === 'dashboard' ? (
+            <div key={`dashboard-content-${userType}`}>
+              {renderDashboard}
+            </div>
+          ) : (
+            <div key="profile-content">
+              <ProfileSettings key={`profile-${profile.id}`} />
+            </div>
+          )}
         </div>
       </main>
 
