@@ -14,13 +14,6 @@ type Redemption = Tables<'redemptions'> & {
   };
 };
 
-// Define a simple response type for our RPC function
-interface RedeemResponse {
-  success: boolean;
-  message: string;
-  redemption_id?: string;
-}
-
 export function useRewards(userId?: string) {
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -57,6 +50,7 @@ export function useRewards(userId?: string) {
     }
   };
 
+  // Simplified version that just shows a toast and returns false
   const claimReward = async (reward: RewardItem) => {
     if (!userId) {
       toast({
@@ -67,44 +61,13 @@ export function useRewards(userId?: string) {
       return false;
     }
     
-    try {
-      // Use type assertion to fix the type error
-      const { data, error } = await supabase.functions.invoke<RedeemResponse>('redeem-karma-item', {
-        body: {
-          item_id: reward.id,
-          user_id: userId
-        }
-      });
-      
-      if (error) throw error;
-      
-      if (data) {
-        if (data.success) {
-          toast({
-            title: `Reward Claimed: ${reward.title}`,
-            description: `You have used ${reward.points} karma points. We'll send you details via email.`,
-          });
-          
-          await fetchRewards();
-          await fetchRedemptions();
-          return true;
-        } else {
-          toast({
-            title: "Claim failed",
-            description: data.message || "You don't have enough karma points",
-            variant: "destructive"
-          });
-        }
-      }
-      return false;
-    } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title: "Error claiming reward",
-        description: err.message,
-      });
-      return false;
-    }
+    toast({
+      title: "Feature temporarily disabled",
+      description: "Reward claiming is currently unavailable. Please try again later.",
+      variant: "destructive"
+    });
+    
+    return false;
   };
 
   useEffect(() => {

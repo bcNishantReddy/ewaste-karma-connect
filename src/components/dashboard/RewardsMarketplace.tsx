@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,14 +73,12 @@ const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({
                   </div>
                   <p className="text-sm text-gray-500 mt-1">{reward.description}</p>
                   <Button
-                    className={`mt-3 ${karmaPoints >= reward.points ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`}
+                    className="mt-3 bg-gray-300 cursor-not-allowed"
                     size="sm"
                     onClick={() => onClaimReward(reward)}
-                    disabled={karmaPoints < reward.points || (reward.stock !== null && reward.stock <= 0)}
+                    disabled={true}
                   >
-                    {karmaPoints >= reward.points 
-                      ? (reward.stock !== null && reward.stock <= 0 ? 'Out of stock' : 'Redeem') 
-                      : `Need ${reward.points - karmaPoints} more`}
+                    Feature temporarily disabled
                   </Button>
                 </div>
               </div>
