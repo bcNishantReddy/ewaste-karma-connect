@@ -85,26 +85,29 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const { data: userCounts, error: userError } = await supabase
+      // Get user type counts by querying directly for each type
+      const { data: usersData, error: usersError } = await supabase
         .from('profiles')
-        .select('user_type, count(*)', { 
-          count: 'exact', 
-          head: false
-        });
+        .select('*')
+        .eq('user_type', 'user');
       
-      if (userError) throw userError;
+      const { data: kabadiwallasData, error: kabadiwallasError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_type', 'kabadiwalla');
+        
+      const { data: recyclersData, error: recyclersError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_type', 'recycler');
       
-      let userCount = 0;
-      let kabadiwallasCount = 0;
-      let recyclersCount = 0;
-
-      if (userCounts) {
-        userCounts.forEach((group: UserTypeCount) => {
-          if (group.user_type === 'user') userCount = parseInt(group.count.toString());
-          if (group.user_type === 'kabadiwalla') kabadiwallasCount = parseInt(group.count.toString());
-          if (group.user_type === 'recycler') recyclersCount = parseInt(group.count.toString());
-        });
-      }
+      if (usersError) throw usersError;
+      if (kabadiwallasError) throw kabadiwallasError;
+      if (recyclersError) throw recyclersError;
+      
+      const userCount = usersData ? usersData.length : 0;
+      const kabadiwallasCount = kabadiwallasData ? kabadiwallasData.length : 0;
+      const recyclersCount = recyclersData ? recyclersData.length : 0;
 
       const { count: totalPickups, error: pickupsError } = await supabase
         .from('pickups')
