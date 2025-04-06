@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,49 +11,30 @@ import RecyclerDashboard from "@/components/dashboard/RecyclerDashboard";
 import ProfileSettings from "@/components/dashboard/ProfileSettings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
-  // Get user type from localStorage
-  const [userType, setUserType] = useState(() => localStorage.getItem('userType') || 'user');
-  const [userName, setUserName] = useState(() => localStorage.getItem('userName') || 'User');
+  const { user, profile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Check if user is logged in (in a real app, this would check auth token)
-    const isLoggedIn = localStorage.getItem('userName');
-    if (!isLoggedIn) {
-      navigate('/login');
-    }
-    
-    // Update username if changed elsewhere
-    const storedUserName = localStorage.getItem('userName');
-    if (storedUserName && storedUserName !== userName) {
-      setUserName(storedUserName);
-    }
-  }, [navigate, userName]);
+  
+  // Set the userType based on profile from Supabase
+  const userType = profile?.user_type || 'user';
 
   const handleUserTypeChange = (type: string) => {
-    setUserType(type);
-    localStorage.setItem('userType', type);
     toast({
       title: "View changed",
       description: `You are now viewing the ${type} dashboard.`,
     });
   };
 
-  const handleLogout = () => {
-    // In a real app, you'd clear authentication tokens
+  const handleLogout = async () => {
+    await signOut();
     toast({
       title: "Logged out",
       description: "You have been logged out successfully.",
     });
-    
-    // For demo purposes, we'll just redirect to login
-    setTimeout(() => {
-      navigate('/login');
-    }, 1000);
   };
 
   const renderDashboard = () => {
@@ -71,12 +52,14 @@ const Dashboard = () => {
 
   function getInitials(name: string) {
     return name
-      .split(' ')
+      ?.split(' ')
       .map(part => part[0])
       .join('')
       .toUpperCase()
-      .substring(0, 2);
+      .substring(0, 2) || 'U';
   }
+
+  const isAdmin = profile?.user_type === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -86,22 +69,20 @@ const Dashboard = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center text-eco-green-600 font-bold">
               <Recycle className="h-6 w-6 mr-2" />
-              <span className="text-xl">E-Waste Karma Connect</span>
+              <span className="text-xl">VentureTech</span>
             </Link>
           </div>
           <div className="flex items-center space-x-4">
             {/* For demo purposes - user type selector */}
-            <Tabs
-              value={userType}
-              onValueChange={handleUserTypeChange}
-              className="hidden md:block"
-            >
-              <TabsList>
-                <TabsTrigger value="user">User View</TabsTrigger>
-                <TabsTrigger value="kabadiwalla">Kabadiwalla View</TabsTrigger>
-                <TabsTrigger value="recycler">Recycler View</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/admin')}
+                className="hidden md:flex"
+              >
+                Admin Dashboard
+              </Button>
+            )}
             
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
@@ -113,12 +94,12 @@ const Dashboard = () => {
                 <Button variant="ghost" className="flex items-center">
                   <div className="flex items-center">
                     <Avatar className="h-8 w-8 mr-2">
-                      <AvatarImage src="" alt={userName} />
+                      <AvatarImage src={profile?.avatar_url || ""} alt={profile?.name || ""} />
                       <AvatarFallback className="bg-green-100 text-green-800">
-                        {getInitials(userName)}
+                        {getInitials(profile?.name || "")}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="mr-1 hidden md:block">{userName}</span>
+                    <span className="mr-1 hidden md:block">{profile?.name}</span>
                     <ChevronDown className="h-4 w-4" />
                   </div>
                 </Button>
@@ -127,19 +108,11 @@ const Dashboard = () => {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                {/* Mobile user type selector */}
-                <div className="md:hidden">
-                  <DropdownMenuItem onClick={() => handleUserTypeChange("user")}>
-                    Switch to User View
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    Admin Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleUserTypeChange("kabadiwalla")}>
-                    Switch to Kabadiwalla View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleUserTypeChange("recycler")}>
-                    Switch to Recycler View
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </div>
+                )}
                 
                 <DropdownMenuItem onClick={() => setActiveTab('profile')}>
                   <User className="mr-2 h-4 w-4" />
@@ -225,7 +198,7 @@ const Dashboard = () => {
       <footer className="bg-white border-t mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} E-Waste Karma Connect. All rights reserved.
+            &copy; {new Date().getFullYear()} VentureTech. All rights reserved.
           </p>
         </div>
       </footer>
