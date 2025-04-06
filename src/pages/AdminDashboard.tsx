@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -27,21 +26,50 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { Database } from "@/integrations/supabase/types";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type Pickup = Database['public']['Tables']['pickups']['Row'];
+type KarmaStoreItem = Database['public']['Tables']['karma_store']['Row'];
+type Redemption = Database['public']['Tables']['redemptions']['Row'];
+
+interface UserTypeCount {
+  user_type: string;
+  count: string;
+}
+
+interface Stats {
+  users: number;
+  kabadiwallas: number;
+  recyclers: number;
+  totalPickups: number;
+}
+
+interface KarmaStats {
+  totalIssued: number;
+  totalRedeemed: number;
+}
+
+interface NewKarmaItem {
+  title: string;
+  description: string;
+  points: number;
+  stock: number;
+}
 
 const AdminDashboard = () => {
   const { user, profile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [isAddingItem, setIsAddingItem] = useState(false);
-  const [newItem, setNewItem] = useState({ title: '', description: '', points: 0, stock: 0 });
-  const [stats, setStats] = useState({ users: 0, kabadiwallas: 0, recyclers: 0, totalPickups: 0 });
-  const [karma, setKarma] = useState({ totalIssued: 0, totalRedeemed: 0 });
-  const [storeItems, setStoreItems] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [pickups, setPickups] = useState<any[]>([]);
+  const [newItem, setNewItem] = useState<NewKarmaItem>({ title: '', description: '', points: 0, stock: 0 });
+  const [stats, setStats] = useState<Stats>({ users: 0, kabadiwallas: 0, recyclers: 0, totalPickups: 0 });
+  const [karma, setKarma] = useState<KarmaStats>({ totalIssued: 0, totalRedeemed: 0 });
+  const [storeItems, setStoreItems] = useState<KarmaStoreItem[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [pickups, setPickups] = useState<Pickup[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch admin dashboard data
   useEffect(() => {
     fetchDashboardData();
     fetchKarmaStoreItems();
@@ -51,33 +79,32 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Get user counts by type
       const { data: userCounts, error: userError } = await supabase
         .from('profiles')
+        .select('user_type, count')
         .select('user_type, count(*)', { count: 'exact' })
         .group('user_type');
 
       if (userError) throw userError;
 
-      // Process user counts
       let userCount = 0;
       let kabadiwallasCount = 0;
       let recyclersCount = 0;
 
-      userCounts.forEach(group => {
-        if (group.user_type === 'user') userCount = parseInt(group.count);
-        if (group.user_type === 'kabadiwalla') kabadiwallasCount = parseInt(group.count);
-        if (group.user_type === 'recycler') recyclersCount = parseInt(group.count);
-      });
+      if (userCounts) {
+        userCounts.forEach((group: UserTypeCount) => {
+          if (group.user_type === 'user') userCount = parseInt(group.count);
+          if (group.user_type === 'kabadiwalla') kabadiwallasCount = parseInt(group.count);
+          if (group.user_type === 'recycler') recyclersCount = parseInt(group.count);
+        });
+      }
 
-      // Get total pickups count
       const { count: totalPickups, error: pickupsError } = await supabase
         .from('pickups')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact', head: true });
 
       if (pickupsError) throw pickupsError;
 
-      // Calculate total karma issued and redeemed
       const { data: karmaIssued, error: karmaError } = await supabase
         .from('pickups')
         .select('points')
@@ -91,10 +118,9 @@ const AdminDashboard = () => {
 
       if (redemptionError) throw redemptionError;
 
-      const totalIssued = karmaIssued.reduce((sum, item) => sum + (item.points || 0), 0);
-      const totalRedeemed = karmaRedeemed.reduce((sum, item) => sum + (item.points_used || 0), 0);
+      const totalIssued = karmaIssued ? karmaIssued.reduce((sum, item) => sum + (item.points || 0), 0) : 0;
+      const totalRedeemed = karmaRedeemed ? karmaRedeemed.reduce((sum, item) => sum + (item.points_used || 0), 0) : 0;
 
-      // Update state with all fetched data
       setStats({
         users: userCount,
         kabadiwallas: kabadiwallasCount,
@@ -224,7 +250,6 @@ const AdminDashboard = () => {
       .substring(0, 2) || 'AD';
   }
 
-  // Mock data for charts - in a real app, we would use actual data from Supabase
   const userTypeData = [
     { name: 'Users', value: stats.users },
     { name: 'Kabadiwallas', value: stats.kabadiwallas },
@@ -244,7 +269,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -293,7 +317,6 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-grow py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
@@ -432,8 +455,8 @@ const AdminDashboard = () => {
                               <td className="px-4 py-2">
                                 {new Date(pickup.created_at).toLocaleDateString()}
                               </td>
-                              <td className="px-4 py-2">{pickup.user?.name || 'Unknown'}</td>
-                              <td className="px-4 py-2">{pickup.kabadiwala?.name || 'Unassigned'}</td>
+                              <td className="px-4 py-2">{(pickup.user as any)?.name || 'Unknown'}</td>
+                              <td className="px-4 py-2">{(pickup.kabadiwala as any)?.name || 'Unassigned'}</td>
                               <td className="px-4 py-2">{pickup.items}</td>
                               <td className="px-4 py-2">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
@@ -675,7 +698,6 @@ const AdminDashboard = () => {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-sm text-gray-500">
