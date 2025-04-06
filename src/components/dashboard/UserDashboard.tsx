@@ -191,14 +191,16 @@ const UserDashboard = () => {
     }
     
     try {
-      const { data, error } = await supabase.rpc<RedeemResponse, { _item_id: string; _user_id: string }>('redeem_karma_item', {
+      const { data, error } = await supabase.rpc('redeem_karma_item', {
         _item_id: reward.id,
         _user_id: user.id
       });
       
       if (error) throw error;
       
-      if (data && data.success) {
+      const responseData = data as RedeemResponse;
+      
+      if (responseData && responseData.success) {
         toast({
           title: `Reward Claimed: ${reward.title}`,
           description: `You have used ${reward.points} karma points. We'll send you details via email.`,
@@ -209,7 +211,7 @@ const UserDashboard = () => {
       } else {
         toast({
           title: "Claim failed",
-          description: data?.message || "You don't have enough karma points",
+          description: responseData?.message || "You don't have enough karma points",
           variant: "destructive"
         });
       }
