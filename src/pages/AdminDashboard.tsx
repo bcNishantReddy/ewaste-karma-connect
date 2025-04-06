@@ -86,8 +86,9 @@ const AdminDashboard = () => {
     try {
       const { data: userCounts, error: userError } = await supabase
         .from('profiles')
+        .select('user_type, count')
         .select('user_type, count(*)')
-        .group('user_type');
+        .groupBy('user_type');
       
       if (userError) throw userError;
       
