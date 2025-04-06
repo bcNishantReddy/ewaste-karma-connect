@@ -68,17 +68,15 @@ export function useRewards(userId?: string) {
     }
     
     try {
-      // Fix the RPC call by casting the result type
-      const result = await supabase.functions.invoke<RedeemResponse>('redeem-karma-item', {
+      // Use type assertion to fix the type error
+      const { data, error } = await supabase.functions.invoke<RedeemResponse>('redeem-karma-item', {
         body: {
           item_id: reward.id,
           user_id: userId
         }
       });
       
-      if (result.error) throw result.error;
-      
-      const data = result.data;
+      if (error) throw error;
       
       if (data) {
         if (data.success) {
