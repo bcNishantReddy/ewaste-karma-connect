@@ -75,21 +75,6 @@ const Dashboard = () => {
     );
   }
 
-  // Determine which dashboard to render based on user type
-  const getDashboardComponent = () => {
-    console.log("Getting dashboard component for user type:", userType);
-    switch (userType) {
-      case "user":
-        return <UserDashboard key={`user-dashboard-${profile.id}`} />;
-      case "kabadiwalla":
-        return <KabadiwallaDashboard key={`kabadiwalla-dashboard-${profile.id}`} />;
-      case "recycler":
-        return <RecyclerDashboard key={`recycler-dashboard-${profile.id}`} />;
-      default:
-        return <UserDashboard key={`default-dashboard-${profile.id}`} />;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -226,7 +211,9 @@ const Dashboard = () => {
           
           {activeTab === 'dashboard' ? (
             <div key={`dashboard-content-${userType}`}>
-              {getDashboardComponent()}
+              {userType === "user" && <UserDashboard />}
+              {userType === "kabadiwalla" && <KabadiwallaDashboard />}
+              {userType === "recycler" && <RecyclerDashboard />}
             </div>
           ) : (
             <div key="profile-content">
