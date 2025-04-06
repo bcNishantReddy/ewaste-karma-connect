@@ -60,7 +60,8 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      const { data, error } = await supabase.rpc(
+      // Properly type the RPC call with a generic type parameter
+      const { data, error } = await supabase.rpc<RedeemResponse>(
         'redeem_karma_item',
         {
           _item_id: itemId,
@@ -70,8 +71,8 @@ const RedeemStore = () => {
 
       if (error) throw error;
       
-      // Type assertion for the response
-      const responseData = data as RedeemResponse;
+      // We know it's a RedeemResponse because we provided the type to rpc
+      const responseData = data;
       
       if (responseData && responseData.success) {
         toast({
