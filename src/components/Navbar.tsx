@@ -15,6 +15,14 @@ const Navbar = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsMenuOpen(false);
+  };
+
   return (
     <nav className="bg-white/95 border-b border-gray-100 backdrop-blur-sm fixed w-full z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,37 +33,43 @@ const Navbar = () => {
               className="flex items-center gap-2 text-eco-green-600 text-xl font-bold"
             >
               <Recycle className="h-7 w-7 text-eco-green-500" />
-              <span className="hidden md:block">E-Waste Karma Connect</span>
-              <span className="md:hidden">E-Karma</span>
+              <span className="hidden md:block">VentureTech</span>
+              <span className="md:hidden">VT</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link
-              to="/"
+            <button
+              onClick={() => scrollToSection('home')}
               className="text-gray-700 hover:text-eco-green-600 px-3 py-2 text-sm font-medium transition-colors"
             >
               Home
-            </Link>
-            <Link
-              to="/about"
+            </button>
+            <button
+              onClick={() => scrollToSection('about')}
               className="text-gray-700 hover:text-eco-green-600 px-3 py-2 text-sm font-medium transition-colors"
             >
               About
-            </Link>
-            <Link
-              to="/how-it-works"
+            </button>
+            <button
+              onClick={() => scrollToSection('how-it-works')}
               className="text-gray-700 hover:text-eco-green-600 px-3 py-2 text-sm font-medium transition-colors"
             >
               How It Works
-            </Link>
-            <Link
-              to="/contact"
+            </button>
+            <button
+              onClick={() => scrollToSection('redeem-store')}
+              className="text-gray-700 hover:text-eco-green-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              Redeem Store
+            </button>
+            <button
+              onClick={() => scrollToSection('contact')}
               className="text-gray-700 hover:text-eco-green-600 px-3 py-2 text-sm font-medium transition-colors"
             >
               Contact
-            </Link>
+            </button>
             <Link to="/login">
               <Button size="sm" variant="outline" className="ml-2">
                 Login
@@ -90,34 +104,36 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={toggleMenu}
+            <button
+              onClick={() => scrollToSection('home')}
+              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left"
             >
               Home
-            </Link>
-            <Link
-              to="/about"
-              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={toggleMenu}
+            </button>
+            <button
+              onClick={() => scrollToSection('about')}
+              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left"
             >
               About
-            </Link>
-            <Link
-              to="/how-it-works"
-              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={toggleMenu}
+            </button>
+            <button
+              onClick={() => scrollToSection('how-it-works')}
+              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left"
             >
               How It Works
-            </Link>
-            <Link
-              to="/contact"
-              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={toggleMenu}
+            </button>
+            <button
+              onClick={() => scrollToSection('redeem-store')}
+              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left"
+            >
+              Redeem Store
+            </button>
+            <button
+              onClick={() => scrollToSection('contact')}
+              className="text-gray-700 hover:text-eco-green-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left"
             >
               Contact
-            </Link>
+            </button>
             <div className="flex flex-col space-y-2 pt-2">
               <Link 
                 to="/login"

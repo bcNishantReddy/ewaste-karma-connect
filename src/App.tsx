@@ -14,11 +14,15 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
   
   useEffect(() => {
     // Check if user is logged in
     const userName = localStorage.getItem('userName');
+    const userRole = localStorage.getItem('userType');
+    
     setIsLoggedIn(!!userName);
+    setUserType(userRole);
   }, []);
 
   return (
@@ -35,8 +39,15 @@ const App = () => {
             />
             <Route 
               path="/dashboard" 
-              element={<Dashboard />} 
+              element={
+                !isLoggedIn ? <Navigate to="/login" /> :
+                <Dashboard />
+              } 
             />
+            <Route path="/about" element={<Navigate to="/#about" />} />
+            <Route path="/how-it-works" element={<Navigate to="/#how-it-works" />} />
+            <Route path="/contact" element={<Navigate to="/#contact" />} />
+            <Route path="/redeem-store" element={<Navigate to="/#redeem-store" />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
