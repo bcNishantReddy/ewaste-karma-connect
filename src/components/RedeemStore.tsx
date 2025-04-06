@@ -60,10 +60,13 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
-        _item_id: itemId,
-        _user_id: user.id
-      });
+      const { data, error } = await supabase.rpc(
+        'redeem_karma_item',
+        {
+          _item_id: itemId,
+          _user_id: user.id
+        }
+      );
 
       if (error) throw error;
       

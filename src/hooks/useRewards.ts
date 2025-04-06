@@ -67,10 +67,13 @@ export function useRewards(userId?: string) {
     }
     
     try {
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
-        _item_id: reward.id,
-        _user_id: userId
-      });
+      const { data, error } = await supabase.rpc(
+        'redeem_karma_item', 
+        {
+          _item_id: reward.id,
+          _user_id: userId
+        }
+      );
       
       if (error) throw error;
       
