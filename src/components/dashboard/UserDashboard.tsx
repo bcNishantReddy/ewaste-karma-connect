@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, MapPin, Award, Calendar, Clock, MoreHorizontal, ShoppingBag, Image } from "lucide-react";
+import { Plus, MapPin, Award, Calendar, Clock, MoreHorizontal, ShoppingBag, Image, RecycleIcon } from "lucide-react";
 
 // Mock data
 const userStats = {
@@ -193,7 +192,7 @@ const UserDashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Recycle className="mr-2 h-5 w-5 text-eco-blue-500" />
+            <RecycleIcon className="mr-2 h-5 w-5 text-eco-blue-500" />
             Your Collection History
           </CardTitle>
           <CardDescription>
