@@ -68,13 +68,17 @@ export function useRewards(userId?: string) {
     }
     
     try {
-      // Use type assertion to bypass TypeScript checking for the RPC call
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
-        _item_id: reward.id,
-        _user_id: userId
-      }) as { data: RedeemResponse | null, error: any };
+      // Fix the RPC call by casting the result type
+      const result = await supabase.functions.invoke<RedeemResponse>('redeem-karma-item', {
+        body: {
+          item_id: reward.id,
+          user_id: userId
+        }
+      });
       
-      if (error) throw error;
+      if (result.error) throw result.error;
+      
+      const data = result.data;
       
       if (data) {
         if (data.success) {

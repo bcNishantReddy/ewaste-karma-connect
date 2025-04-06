@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,12 +60,17 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
-        _item_id: itemId,
-        _user_id: user.id
-      }) as { data: RedeemResponse | null, error: any };
+      // Fix the RPC call by using edge functions
+      const result = await supabase.functions.invoke<RedeemResponse>('redeem-karma-item', {
+        body: {
+          item_id: itemId,
+          user_id: user.id
+        }
+      });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
+      
+      const data = result.data;
       
       if (data) {
         if (data.success) {
