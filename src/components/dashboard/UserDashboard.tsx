@@ -192,8 +192,8 @@ const UserDashboard = () => {
     }
     
     try {
-      // Updated RPC call to use type assertion
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
+      // Updated RPC call with correct typing
+      const { data, error } = await supabase.rpc<any>('redeem_karma_item', {
         _item_id: reward.id,
         _user_id: user.id
       });

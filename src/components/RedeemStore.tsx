@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,8 +61,8 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      // Fixed type for RPC call - only specify the input parameters type
-      const { data, error } = await supabase.rpc('redeem_karma_item', {
+      // Fixed typing for RPC call
+      const { data, error } = await supabase.rpc<any>('redeem_karma_item', {
         _item_id: itemId,
         _user_id: user.id
       });
