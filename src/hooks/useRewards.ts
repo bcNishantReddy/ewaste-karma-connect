@@ -14,18 +14,6 @@ type Redemption = Tables<'redemptions'> & {
   };
 };
 
-interface RedeemResponse {
-  success: boolean;
-  message: string;
-  redemption_id?: string;
-}
-
-// Interface for RPC input parameters
-interface RedeemKarmaItemParams {
-  _item_id: string;
-  _user_id: string;
-}
-
 export function useRewards(userId?: string) {
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -73,8 +61,7 @@ export function useRewards(userId?: string) {
     }
     
     try {
-      // Properly type the RPC call with both generic type parameters
-      const { data, error } = await supabase.rpc<RedeemResponse, RedeemKarmaItemParams>(
+      const { data, error } = await supabase.rpc(
         'redeem_karma_item', 
         {
           _item_id: reward.id,
@@ -84,26 +71,28 @@ export function useRewards(userId?: string) {
       
       if (error) throw error;
       
-      // We know it's a RedeemResponse because we provided the type to rpc
-      const responseData = data;
-      
-      if (responseData && responseData.success) {
-        toast({
-          title: `Reward Claimed: ${reward.title}`,
-          description: `You have used ${reward.points} karma points. We'll send you details via email.`,
-        });
+      // Since we don't have strict typing, use a type guard
+      if (data && typeof data === 'object' && 'success' in data) {
+        const responseData = data as { success: boolean; message: string; redemption_id?: string };
         
-        await fetchRewards();
-        await fetchRedemptions();
-        return true;
-      } else {
-        toast({
-          title: "Claim failed",
-          description: responseData?.message || "You don't have enough karma points",
-          variant: "destructive"
-        });
-        return false;
+        if (responseData.success) {
+          toast({
+            title: `Reward Claimed: ${reward.title}`,
+            description: `You have used ${reward.points} karma points. We'll send you details via email.`,
+          });
+          
+          await fetchRewards();
+          await fetchRedemptions();
+          return true;
+        } else {
+          toast({
+            title: "Claim failed",
+            description: responseData.message || "You don't have enough karma points",
+            variant: "destructive"
+          });
+        }
       }
+      return false;
     } catch (err: any) {
       toast({
         variant: "destructive",

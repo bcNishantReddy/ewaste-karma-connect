@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,18 +9,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 
 type KarmaStoreItem = Tables<'karma_store'>;
-
-interface RedeemResponse {
-  success: boolean;
-  message: string;
-  redemption_id?: string;
-}
-
-// Interface for RPC input parameters
-interface RedeemKarmaItemParams {
-  _item_id: string;
-  _user_id: string;
-}
 
 const RedeemStore = () => {
   const [redeemItems, setRedeemItems] = useState<KarmaStoreItem[]>([]);
@@ -66,8 +53,7 @@ const RedeemStore = () => {
     try {
       setRedeeming(itemId);
       
-      // Properly type the RPC call with both generic type parameters
-      const { data, error } = await supabase.rpc<RedeemResponse, RedeemKarmaItemParams>(
+      const { data, error } = await supabase.rpc(
         'redeem_karma_item',
         {
           _item_id: itemId,
@@ -77,29 +63,30 @@ const RedeemStore = () => {
 
       if (error) throw error;
       
-      // We know it's a RedeemResponse because we provided the type to rpc
-      const responseData = data;
-      
-      if (responseData && responseData.success) {
-        toast({
-          title: "Redemption successful",
-          description: "Your reward has been redeemed successfully!",
-        });
+      if (data && typeof data === 'object' && 'success' in data) {
+        const responseData = data as { success: boolean; message: string; redemption_id?: string };
         
-        const { data: refreshedItems } = await supabase
-          .from('karma_store')
-          .select('*')
-          .order('points', { ascending: true });
+        if (responseData.success) {
+          toast({
+            title: "Redemption successful",
+            description: "Your reward has been redeemed successfully!",
+          });
           
-        if (refreshedItems) {
-          setRedeemItems(refreshedItems);
+          const { data: refreshedItems } = await supabase
+            .from('karma_store')
+            .select('*')
+            .order('points', { ascending: true });
+            
+          if (refreshedItems) {
+            setRedeemItems(refreshedItems);
+          }
+        } else {
+          toast({
+            title: "Redemption failed",
+            description: responseData.message || "There was an error processing your redemption",
+            variant: "destructive"
+          });
         }
-      } else {
-        toast({
-          title: "Redemption failed",
-          description: responseData?.message || "There was an error processing your redemption",
-          variant: "destructive"
-        });
       }
     } catch (err: any) {
       console.error('Error redeeming item:', err);
