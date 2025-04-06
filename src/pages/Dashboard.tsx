@@ -75,6 +75,26 @@ const Dashboard = () => {
     );
   }
 
+  // Memoize the dashboard component to prevent unnecessary re-renders
+  const DashboardContent = useMemo(() => {
+    if (activeTab !== 'dashboard') {
+      return null;
+    }
+    
+    console.log("Rendering dashboard for user type:", userType);
+    
+    switch (userType) {
+      case "user":
+        return <UserDashboard key={`user-dashboard-${profile.id}`} />;
+      case "kabadiwalla":
+        return <KabadiwallaDashboard key={`kabadiwalla-dashboard-${profile.id}`} />;
+      case "recycler":
+        return <RecyclerDashboard key={`recycler-dashboard-${profile.id}`} />;
+      default:
+        return <UserDashboard key={`default-dashboard-${profile.id}`} />;
+    }
+  }, [userType, activeTab, profile.id]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -209,16 +229,11 @@ const Dashboard = () => {
             </div>
           </div>
           
+          {/* Render either the dashboard content or profile settings */}
           {activeTab === 'dashboard' ? (
-            <div key={`dashboard-content-${userType}`}>
-              {userType === "user" && <UserDashboard />}
-              {userType === "kabadiwalla" && <KabadiwallaDashboard />}
-              {userType === "recycler" && <RecyclerDashboard />}
-            </div>
+            <div>{DashboardContent}</div>
           ) : (
-            <div key="profile-content">
-              <ProfileSettings key={`profile-${profile.id}`} />
-            </div>
+            <ProfileSettings key={`profile-${profile.id}`} />
           )}
         </div>
       </main>

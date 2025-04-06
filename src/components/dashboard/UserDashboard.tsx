@@ -62,13 +62,18 @@ const UserDashboard = () => {
           />
 
           <div className="grid md:grid-cols-2 gap-6">
-            <MapComponent 
-              userType="user"
-              title="Nearby Kabadiwallas"
-              description="Find e-waste collectors in your area"
-              pointsCount={5}
-              onlyShowRelevant={true}
-            />
+            {/* Add error boundary around MapComponent */}
+            <div className="relative">
+              <ErrorBoundary fallback={<MapFallback />}>
+                <MapComponent 
+                  userType="user"
+                  title="Nearby Kabadiwallas"
+                  description="Find e-waste collectors in your area"
+                  pointsCount={5}
+                  onlyShowRelevant={true}
+                />
+              </ErrorBoundary>
+            </div>
 
             <PickupRequestForm
               userLocation={userLocation}
@@ -94,15 +99,51 @@ const UserDashboard = () => {
             title="Your Collection History"
             description="All your e-waste pickups"
           />
-          <MapComponent 
-            userType="user"
-            title="Pickup Locations"
-            description="Map of your collection history"
-            height="300px"
-            showRefreshButton={false}
-          />
+          
+          <ErrorBoundary fallback={<MapFallback />}>
+            <MapComponent 
+              userType="user"
+              title="Pickup Locations"
+              description="Map of your collection history"
+              height="300px"
+              showRefreshButton={false}
+            />
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+};
+
+// Simple error boundary component to catch and handle errors
+class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback: React.ReactNode }> {
+  state = { hasError: false };
+  
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  
+  componentDidCatch(error: any, info: any) {
+    console.error("Error in component:", error, info);
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    
+    return this.props.children;
+  }
+}
+
+// Fallback component to show when map errors out
+const MapFallback = () => {
+  return (
+    <div className="border rounded-lg p-4 bg-white">
+      <h3 className="font-medium">Map Unavailable</h3>
+      <p className="text-gray-500 text-sm mt-2">
+        We couldn't load the map right now. Please try again later.
+      </p>
     </div>
   );
 };
