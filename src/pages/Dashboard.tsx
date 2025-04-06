@@ -30,23 +30,27 @@ const Dashboard = () => {
   };
 
   const handleLogout = async () => {
-    await signOut();
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
-    });
+    try {
+      await signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const renderDashboard = () => {
     switch (userType) {
       case "user":
-        return <UserDashboard />;
+        return <UserDashboard key="user-dashboard" />;
       case "kabadiwalla":
-        return <KabadiwallaDashboard />;
+        return <KabadiwallaDashboard key="kabadiwalla-dashboard" />;
       case "recycler":
-        return <RecyclerDashboard />;
+        return <RecyclerDashboard key="recycler-dashboard" />;
       default:
-        return <UserDashboard />;
+        return <UserDashboard key="default-dashboard" />;
     }
   };
 
@@ -127,7 +131,10 @@ const Dashboard = () => {
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onSelect={(e) => {
+                  e.preventDefault();
+                  handleLogout();
+                }}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
@@ -190,7 +197,7 @@ const Dashboard = () => {
             </div>
           </div>
           
-          {activeTab === 'dashboard' ? renderDashboard() : <ProfileSettings />}
+          {activeTab === 'dashboard' ? renderDashboard() : <ProfileSettings key="profile-settings" />}
         </div>
       </main>
 
